@@ -1,6 +1,6 @@
-# TurretWar Introduction
-Continuous update mini game.
-# Patch Notes
+# TurretWar,”炮台战争“简介
+持续更新的小游戏，正在进行可视化尝试。
+# 更新日志
 ## AlphaTest
 Published on 2025.3.19
 ## AlphaTest_1.1
