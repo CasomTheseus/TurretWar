@@ -60,7 +60,7 @@ def deadline_value(h_me, t_me, s_me, h_op, t_op, s_op, tie="forces"):
     return DRAW
 
 
-def step(st, a, DEADLINE, REFLECT=True, TIE="forces", REFLECT_DIV=2, RN=1, RD=None, REFLECT_NO_BASE=False):
+def step(st, a, DEADLINE, REFLECT=True, TIE="forces", REFLECT_DIV=2, RN=1, RD=None, REFLECT_NO_BASE=False, DECAY=0):
     """返回 ('t', 值) 终局，或 ('s', 新状态)。值以"当前行动者"视角"""
     ply, p, h1, t1, s1, h2, t2, s2 = st
     if p == 1:
@@ -69,6 +69,8 @@ def step(st, a, DEADLINE, REFLECT=True, TIE="forces", REFLECT_DIV=2, RN=1, RD=No
         me, op = (h2, t2, s2), (h1, t1, s1)
     h_m, t_m, s_m = me
     h_o, t_o, s_o = op
+    if DECAY:                       # 护盾衰减：每回合开始时，行动方自身护盾 -DECAY（不低于 0）
+        s_m = max(0, s_m - DECAY)
     if a == 0:
         t_m = min(t_m + 1, CAPT)
     elif a == 1:
@@ -122,7 +124,7 @@ def scalar_terminal(st, TIE="forces"):
     return 1_000_000 * sign + 1_000 * dh + df
 
 
-def solve_scalar(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", REFLECT_DIV=2, verbose=False, RN=1, REFLECT_NO_BASE=False):
+def solve_scalar(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", REFLECT_DIV=2, verbose=False, RN=1, REFLECT_NO_BASE=False, DECAY=0):
     """同 solve，但终局用标量收益（可比较"和棋偏向谁"、"赢多少"）"""
     start = init_state(H, KOMI_S)
     layers = [{start}]; cur = layers[0]
@@ -130,7 +132,7 @@ def solve_scalar(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", REFLECT
         nxt = set()
         for st in cur:
             for a in (0, 1, 2):
-                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE)
+                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE, DECAY)
                 if kind == 's':
                     nxt.add(payload)
         layers.append(nxt); cur = nxt
@@ -141,7 +143,7 @@ def solve_scalar(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", REFLECT
         for st in layers[k]:
             best = None
             for a in (0, 1, 2):
-                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE)
+                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE, DECAY)
                 if kind == 't':
                     cand = 1_000_000 * payload
                 else:
@@ -154,7 +156,7 @@ def solve_scalar(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", REFLECT
     return start, layers, vals
 
 
-def solve(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", policy=None, verbose=True, REFLECT_DIV=2, RN=1, REFLECT_NO_BASE=False):
+def solve(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", policy=None, verbose=True, REFLECT_DIV=2, RN=1, REFLECT_NO_BASE=False, DECAY=0):
     """policy: {1: 强制行动 or None, 2: ...} 用于检验退化策略"""
     policy = policy or {}
     start = init_state(H, KOMI_S)
@@ -166,7 +168,7 @@ def solve(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", policy=None, v
             p = st[1]
             acts = [policy[p]] if policy.get(p) is not None else (0, 1, 2)
             for a in acts:
-                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE)
+                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE, DECAY)
                 if kind == 's':
                     nxt.add(payload)
         layers.append(nxt)
@@ -183,7 +185,7 @@ def solve(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", policy=None, v
             acts = [policy[p]] if policy.get(p) is not None else (0, 1, 2)
             best = -2
             for a in acts:
-                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE)
+                kind, payload = step(st, a, DEADLINE, REFLECT, TIE, REFLECT_DIV, RN, REFLECT_DIV, REFLECT_NO_BASE, DECAY)
                 if kind == 't':
                     cand = payload
                 else:
