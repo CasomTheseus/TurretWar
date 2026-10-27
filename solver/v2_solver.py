@@ -199,67 +199,6 @@ def solve(H=3, KOMI_S=1, DEADLINE=30, REFLECT=True, TIE="forces", policy=None, v
     return start, layers, vals
 
 
-def line_from(start, layers, vals, DEADLINE):
-    """抽取一条最优线路（赢方走最快，输方尽量拖）"""
-    st = start; out = []; i = 0
-    maxt = maxs = 0
-    while i < DEADLINE:
-        ply, p, h1, t1, s1, h2, t2, s2 = st
-        maxt = max(maxt, t1, t2); maxs = max(maxs, s1, s2)
-        target = vals[i][st]
-        best = None
-        for a in (0, 1, 2):
-            kind, payload = step(st, a, DEADLINE)
-            if kind == 't':
-                cand = payload; nxt = None
-            else:
-                cand = -vals[i + 1][payload]; nxt = payload
-            if cand != target: continue
-            # 赢方取最短，输方取最长：用"剩余层数"近似，先取胜法1，再取更慢
-            key = (0 if cand == WIN else 1)
-            if best is None or key < best[0]:
-                best = (key, a, nxt)
-        if best is None:
-            out.append(f"P{p}?冲突"); break
-        _, a, nxt = best
-        out.append(f"P{p}{NAME[a]}")
-        if nxt is None: break
-        st = nxt; i += 1
-    return out, maxt, maxs
-
-
-def report(title, **kw):
-    t0 = time.time()
-    print(f"### {title}")
-    start, layers, vals = solve(**kw)
-    v = vals[0][start]
-    tag = {WIN: "玩家1(先手)必胜", LOSS: "玩家2(后手)必胜", DRAW: "和棋"}[v]
-    print(f"  结论: {tag}    用时 {time.time()-t0:.1f}s")
-    # 决策密度（三值口径）
-    tot = one = allfree = 0
-    uniqcnt = defaultdict(int)
-    for i in range(kw.get('DEADLINE', 30)):
-        for st, vv in vals[i].items():
-            if vv == LOSS: continue
-            tot += 1
-            keep = []
-            for a in (0, 1, 2):
-                kind, payload = step(st, a, kw.get('DEADLINE', 30))
-                c = payload if kind == 't' else -vals[i + 1][payload]
-                if c == vv: keep.append(a)
-            if len(keep) == 3: allfree += 1
-            if len(keep) == 1: one += 1; uniqcnt[keep[0]] += 1
-    if tot:
-        print(f"  非败局局面 {tot}: 三种走法都同等最优 {100*allfree/tot:.1f}% | 唯一最优 {100*one/tot:.1f}%"
-              f" (其中 造炮台{uniqcnt[0]} 造护盾{uniqcnt[1]} 进攻{uniqcnt[2]})")
-    ln, maxt, maxs = line_from(start, layers, vals, kw.get('DEADLINE', 30))
-    print(f"  最优线路 {len(ln)} 手, 线上最大 炮台={maxt}/护盾={maxs} (上限 {CAPT}/{CAPS})"
-          f" {'✅未绑定' if maxt < CAPT and maxs < CAPS else '⚠️触到上限,结论可能被截断扭曲'}")
-    print(f"  线路: {' '.join(ln)}")
-    print()
-    return v, dict(tot=tot, one=one, allfree=allfree)
-
-
 if __name__ == "__main__":
     print("=" * 70)
     print("第一步：先看预算是否真的起作用（R1+R2 但不同预算）")
