@@ -26,7 +26,7 @@ clang -x c -std=c11 -DINTRO_DELAY=0 -o turretwar2 TurretWar.AlphaTest_2.0.cpp
 
 # 编码说明
 
-- UTF-8：`AlphaTest`、`AlphaTest_1.1`、`AlphaTest_1.2`、`AlphaTest_2.0`、`AlphaTest_3.0`、本 README 及文档
+- UTF-8：`AlphaTest`、`AlphaTest_1.1`、`AlphaTest_1.2`、`AlphaTest_2.0`、`AlphaTest_3.0`、`web/index.html`、本 README 及文档
 - GBK / ANSI：`AlphaTest_1.2.1`、`AlphaTest_1.2.2`（早期在中文 Windows 编辑器下保存）
 
 在 UTF-8 环境里打开后者可能显示乱码；用 MSVC 编译 UTF-8 源文件时请加 `/utf-8`。为保留各版本的原始快照，历史文件未做编码转换。
@@ -70,3 +70,13 @@ Published on 2026.10.28
   - 实测：对局重新出现真实攻防（基地血会被打掉、可以打出击杀），最优走法的多样性是2.0的60~80倍.
   - 已知边界：完美对弈下必有一方必胜（无补偿时壁垒胜，+1护盾后由先手方胜），正式比赛建议双局换边.
   - 设计依据与标定表见 RULES-3.0.md 与 SOLVER-REPORT.md 第十节.
+
+## AlphaTest_4.0
+Published on 2026.10.28
+
+更新内容：发布网页可视化版，规则与3.0完全一致.
+  - 单文件 web/index.html，零外部依赖，浏览器直接打开即可同屏双人对战（无需构建/无需联网）.
+  - 界面：回合预算条、双方阵营卡（基地血/护盾/炮台/剩余兵力）、战线对抗条、三张行动卡（键盘1/2/3）、战报.
+  - 动画：弹道飞行、命中粒子、冲击环、受击震屏、护盾点弹出、护盾反击回弹；支持 prefers-reduced-motion.
+  - 验证：规则核与求解器逐手对拍（200局随机对局全部一致）；无头浏览器交互自测零错误.
+  - 打开方式：双击 web/index.html；地址后加 #demo 进演示中局，加 #autoplay 自动演示5手.

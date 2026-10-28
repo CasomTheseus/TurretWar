@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TurretWar 4.0 · 网页版</title>
+<style>
+/* ============ 设计令牌 ============ */
+:root{
+  --bg:#0a0f1e; --bg2:#0e1530; --panel:#111a33; --panel2:#0d1529;
+  --line:#1d2a4d; --line2:#2a3a66;
+  --text:#e8eeff; --muted:#8fa1c9; --dim:#5b6b93;
+  --bulwark:#35c7d8; --striker:#ff8a3d;
+  --danger:#ff4d6d; --ok:#4ade80; --gold:#ffd166;
+  --r:14px; --t-fast:120ms; --t:180ms; --ease:cubic-bezier(.22,.9,.28,1);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:
+    radial-gradient(1200px 600px at 50% -10%, #16223f 0%, transparent 60%),
+    radial-gradient(800px 400px at 10% 110%, #101b36 0%, transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font:15px/1.5 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:14px;padding:16px 18px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+
+/* ============ 顶栏 ============ */
+.topbar{display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:220px}
+.brand h1{margin:0;font-size:19px;letter-spacing:.5px;font-weight:700}
+.brand .ver{font-size:11px;color:var(--dim);letter-spacing:1px}
+.turnbox{display:flex;align-items:center;gap:12px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);padding:8px 14px}
+.turnbox .label{font-size:12px;color:var(--muted)}
+.turnbox .num{font-size:22px;font-weight:800;letter-spacing:.5px}
+.turnbox .num small{font-size:13px;color:var(--dim);font-weight:600}
+.deadline{flex:1;height:8px;background:#0b132b;border-radius:99px;
+  overflow:hidden;border:1px solid var(--line);position:relative}
+.deadline > i{display:block;height:100%;width:100%;border-radius:99px;
+  background:linear-gradient(90deg,#3b82f6,#22d3ee);transform-origin:left center;
+  transition:width 260ms var(--ease), background 260ms linear}
+.deadline.warn > i{background:linear-gradient(90deg,#f59e0b,#ef4444);animation:pulseBar 900ms ease-in-out infinite}
+@keyframes pulseBar{50%{opacity:.55}}
+.turnwho{font-size:12px;color:var(--muted);min-width:96px;text-align:right}
+.turnwho b{color:var(--text)}
+
+/* ============ 主区 ============ */
+.board{display:grid;grid-template-columns:minmax(220px,260px) 1fr minmax(220px,260px);
+  gap:16px;align-items:stretch;min-height:0}
+.side{display:flex;flex-direction:column;gap:10px;min-height:0}
+.side.active .card{border-color:var(--line2);box-shadow:0 0 0 1px rgba(255,255,255,.02),0 12px 40px -18px #000}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.who{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.badge{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
+  font-weight:800;font-size:13px;color:#04101f}
+.who .name{font-weight:700;font-size:15px}
+.who .sub{font-size:11px;color:var(--muted);margin-top:1px}
+.who .active-tag{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:99px;
+  border:1px solid var(--line2);color:var(--dim);opacity:0;transition:opacity var(--t) var(--ease)}
+.side.active .active-tag{opacity:1;color:var(--text);border-color:currentColor}
+
+.hp{display:flex;gap:6px;align-items:center;margin:2px 0 10px}
+.hp .pip{flex:1;height:12px;border-radius:99px;background:#1a2342;
+  border:1px solid #24325c;transition:background var(--t) var(--ease), transform var(--t) var(--ease)}
+.hp .pip.on{background:linear-gradient(180deg,#34d399,#10b981);border-color:#2fbf87;
+  box-shadow:0 0 14px -4px #10b981}
+.hp .pip.hurt{animation:hurt 380ms var(--ease)}
+@keyframes hurt{0%{transform:scaleY(1)}30%{transform:scaleY(1.9)}100%{transform:scaleY(1)}}
+
+.stat{display:flex;justify-content:space-between;align-items:center;padding:5px 0;
+  border-top:1px dashed #1b2746;font-size:13px;color:var(--muted)}
+.stat:first-of-type{border-top:0}
+.stat b{color:var(--text);font-size:15px}
+.stat .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:6px;
+  font-size:12px;border-radius:6px;background:#15203c}
+.pips-shield{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.pips-shield span{width:9px;height:9px;border-radius:3px;background:#1b2748;
+  transition:background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease)}
+.pips-shield span.on{background:var(--gold);box-shadow:0 0 10px -3px var(--gold)}
+.pips-shield span.new{animation:pop 260ms var(--ease)}
+@keyframes pop{0%{transform:scale(.3)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+
+/* ============ 战场 ============ */
+.mid{position:relative;border-radius:var(--r);overflow:hidden;min-height:0;
+  background:
+    linear-gradient(180deg,rgba(53,199,216,.05),transparent 40%,rgba(255,138,61,.05)),
+    repeating-linear-gradient(90deg,transparent 0 47px,#1a2748 47px 48px),
+    repeating-linear-gradient(0deg,transparent 0 47px,#1a2748 47px 48px),
+    #0b1226;
+  border:1px solid var(--line)}
+.mid::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(600px 300px at 50% 55%,transparent 30%,rgba(0,0,0,.45))}
+.lane{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:12px;padding:0 18px;pointer-events:none}
+.lane .sideStat{display:flex;flex-direction:column;gap:2px;min-width:58px}
+.lane .sideStat.right{text-align:right}
+.lane .sideStat .nm{font-size:11px;color:var(--muted)}
+.lane .sideStat b{font-size:20px;font-weight:800}
+.lane .track{flex:1;height:10px;border-radius:99px;background:#0d1730;
+  border:1px solid var(--line);overflow:hidden;display:flex}
+.lane .track:first-of-type{justify-content:flex-end}
+.lane .track i{display:block;height:100%;width:0%;border-radius:99px;
+  transition:width 420ms var(--ease)}
+#bar1{background:linear-gradient(90deg,#35c7d8,#60e0ef)}
+#bar2{background:linear-gradient(90deg,#ff8a3d,#ffb066)}
+.lane .emblem{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+  font-size:13px;font-weight:800;letter-spacing:1px;color:var(--muted);
+  border:1px solid var(--line2);background:radial-gradient(circle,rgba(30,44,80,.8),transparent 72%)}
+.laneHint{position:absolute;left:0;right:0;top:calc(50% + 46px);text-align:center;
+  font-size:12px;color:var(--dim);pointer-events:none}
+.vs{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.vs .ring{width:118px;height:118px;border-radius:50%;border:1px solid #223257;
+  display:grid;place-items:center;color:var(--dim);font-size:11px;letter-spacing:3px;
+  background:radial-gradient(circle,rgba(30,44,80,.55),transparent 70%)}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* ============ 行动区 ============ */
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.act{position:relative;text-align:left;padding:13px 15px;border-radius:var(--r);
+  background:linear-gradient(180deg,#131d38,#0e1730);border:1px solid var(--line);
+  transition:transform var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+             box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease)}
+.act:hover:not(:disabled){transform:translateY(-2px);border-color:var(--line2);
+  box-shadow:0 14px 34px -20px #000}
+.act:active:not(:disabled){transform:scale(.985)}
+.act:disabled{opacity:.42;cursor:not-allowed}
+.act .k{position:absolute;top:10px;right:12px;font-size:11px;color:var(--dim);
+  border:1px solid var(--line2);border-radius:6px;padding:1px 6px}
+.act .t{font-weight:700;font-size:15px;margin-bottom:3px}
+.act .d{font-size:12px;color:var(--muted)}
+.act.attack{border-color:#3a2a2a;background:linear-gradient(180deg,#22162a,#170f23)}
+.act.attack:hover:not(:disabled){border-color:#5b3a3a}
+
+/* ============ 战报 ============ */
+.log{height:112px;overflow:auto;background:var(--panel2);border:1px solid var(--line);
+  border-radius:var(--r);padding:10px 14px;font-size:13px;scrollbar-width:thin}
+.log p{margin:3px 0;color:var(--muted);display:flex;gap:8px}
+.log p b{color:var(--text);font-weight:600}
+.log p .t{color:var(--dim);font-size:11px;min-width:44px}
+.log p.hit b{color:var(--danger)}
+.log p.good b{color:var(--ok)}
+.log p.gold b{color:var(--gold)}
+
+/* ============ 弹窗 ============ */
+.modal{position:fixed;inset:0;display:grid;place-items:center;z-index:40;
+  background:radial-gradient(900px 500px at 50% 40%,rgba(20,32,62,.92),rgba(6,10,22,.97));
+  backdrop-filter:blur(3px)}
+.modal.hidden{display:none}
+.panel{width:min(760px,92vw);background:linear-gradient(180deg,#121c38,#0c1428);
+  border:1px solid var(--line2);border-radius:22px;padding:26px 28px;
+  box-shadow:0 40px 120px -40px #000;animation:rise 320ms var(--ease)}
+@keyframes rise{from{transform:translateY(14px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+.panel h2{margin:0 0 4px;font-size:22px}
+.panel .lead{margin:0 0 18px;color:var(--muted);font-size:13px}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pick{text-align:left;padding:16px;border-radius:16px;border:1px solid var(--line);
+  background:linear-gradient(180deg,#131d38,#0e1730);
+  transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
+.pick:hover{transform:translateY(-3px);box-shadow:0 22px 50px -28px #000}
+.pick .ph{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pick .ph .dot{width:12px;height:12px;border-radius:50%}
+.pick .ph .nm{font-weight:800;font-size:17px}
+.pick ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+.pick ul li{margin:3px 0}
+.result{display:grid;gap:14px}
+.result .big{font-size:26px;font-weight:800}
+.result .sub{color:var(--muted);font-size:13px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.kv .box{background:#0d1529;border:1px solid var(--line);border-radius:12px;padding:12px}
+.kv .box .h{font-size:12px;color:var(--muted);margin-bottom:6px}
+.kv .box .v{font-size:13px;line-height:1.8}
+.again{margin-top:6px;align-self:start;padding:11px 20px;border-radius:12px;font-weight:700;
+  background:linear-gradient(180deg,#2b6cf6,#1d4ed8);border:1px solid #3b82f6}
+.again:active{transform:scale(.98)}
+
+/* ============ 动效 ============ */
+.shake{animation:shake 260ms var(--ease)}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-5px)}40%{transform:translateX(4px)}
+  60%{transform:translateX(-3px)}80%{transform:translateX(2px)}
+}
+.flash{animation:flash 380ms var(--ease)}
+@keyframes flash{0%{box-shadow:inset 0 0 0 2px var(--danger),0 0 40px -10px var(--danger)}
+  100%{box-shadow:inset 0 0 0 0 transparent,0 0 0 0 transparent}}
+.flyer{position:fixed;width:14px;height:14px;border-radius:50%;pointer-events:none;z-index:30;
+  background:radial-gradient(circle at 35% 35%,#fff,var(--c,#7dd3fc) 55%,transparent 72%);
+  filter:drop-shadow(0 0 10px var(--c,#7dd3fc))}
+.ringfx{position:fixed;border-radius:50%;pointer-events:none;z-index:29;border:2px solid var(--c,#7dd3fc);
+  animation:ring 420ms var(--ease) forwards}
+@keyframes ring{from{transform:scale(.2);opacity:.95}to{transform:scale(2.4);opacity:0}}
+.banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;
+  padding:12px 26px;border-radius:99px;font-weight:800;font-size:20px;letter-spacing:1px;
+  background:rgba(10,16,32,.86);border:1px solid var(--line2);animation:rise 260ms var(--ease)}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:1ms!important;transition-duration:1ms!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 顶栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <h1>TurretWar</h1><span class="ver">4.0 · 网页版</span>
+    </div>
+    <div class="turnbox">
+      <span class="label">回合</span>
+      <span class="num mono"><span id="ply">0</span><small>/24</small></span>
+    </div>
+    <div class="deadline" id="deadline"><i id="deadlineBar"></i></div>
+    <div class="turnwho" id="turnwho">准备中</div>
+  </header>
+
+  <!-- 战场 -->
+  <main class="board">
+    <section class="side" id="side1">
+      <div class="card" id="card1">
+        <div class="who">
+          <div class="badge" id="badge1" style="background:var(--bulwark)">壁</div>
+          <div>
+            <div class="name" id="name1">壁垒</div>
+            <div class="sub" id="sub1">造护盾 +3 · 伤害 1</div>
+          </div>
+          <span class="active-tag" id="tag1">行动中</span>
+        </div>
+        <div class="hp" id="hp1"></div>
+        <div class="stat"><span><span class="ico">🏰</span>基地生命</span><b class="mono" id="hpNum1">3</b></div>
+        <div class="stat"><span><span class="ico">🛡</span>护盾</span><b class="mono" id="shNum1">0</b></div>
+        <div class="pips-shield" id="shPips1"></div>
+        <div class="stat" style="margin-top:6px"><span><span class="ico">💥</span>炮台</span><b class="mono" id="tuNum1">0</b></div>
+        <div class="stat"><span>剩余兵力</span><b class="mono" id="force1">0</b></div>
+      </div>
+    </section>
+
+    <section class="mid" id="mid">
+      <canvas id="fx"></canvas>
+      <div class="lane">
+        <div class="sideStat"><span class="nm" id="laneName1">玩家1</span><b class="mono" id="laneF1">0</b></div>
+        <div class="track"><i id="bar1"></i></div>
+        <div class="emblem">VS</div>
+        <div class="track"><i id="bar2"></i></div>
+        <div class="sideStat right"><span class="nm" id="laneName2">玩家2</span><b class="mono" id="laneF2">0</b></div>
+      </div>
+      <div class="laneHint" id="laneHint">剩余 24 手 · 超时先比基地血，再比剩余兵力</div>
+    </section>
+
+    <section class="side" id="side2">
+      <div class="card" id="card2">
+        <div class="who">
+          <div class="badge" id="badge2" style="background:var(--striker)">突</div>
+          <div>
+            <div class="name" id="name2">突击</div>
+            <div class="sub" id="sub2">造护盾 +2 · 伤害 2</div>
+          </div>
+          <span class="active-tag" id="tag2">行动中</span>
+        </div>
+        <div class="hp" id="hp2"></div>
+        <div class="stat"><span><span class="ico">🏰</span>基地生命</span><b class="mono" id="hpNum2">3</b></div>
+        <div class="stat"><span><span class="ico">🛡</span>护盾</span><b class="mono" id="shNum2">0</b></div>
+        <div class="pips-shield" id="shPips2"></div>
+        <div class="stat" style="margin-top:6px"><span><span class="ico">💥</span>炮台</span><b class="mono" id="tuNum2">0</b></div>
+        <div class="stat"><span>剩余兵力</span><b class="mono" id="force2">0</b></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 行动 + 战报 -->
+  <footer>
+    <div class="actions">
+      <button class="act" id="a0" data-a="0">
+        <span class="k">1</span>
+        <div class="t">建造炮台</div>
+        <div class="d" id="d0">+1 座炮台</div>
+      </button>
+      <button class="act" id="a1" data-a="1">
+        <span class="k">2</span>
+        <div class="t">建造护盾</div>
+        <div class="d" id="d1">+3 护盾</div>
+      </button>
+      <button class="act attack" id="a2" data-a="2">
+        <span class="k">3</span>
+        <div class="t">发起进攻</div>
+        <div class="d" id="d2">炮台 ×1 伤害</div>
+      </button>
+    </div>
+    <div class="log" id="log"></div>
+  </footer>
+</div>
+
+<!-- 开局选阵营 -->
+<div class="modal" id="pickModal">
+  <div class="panel">
+    <h2>选择你的阵营</h2>
+    <p class="lead">玩家1 先选；玩家2 自动使用另一个。规则遵循 TurretWar 3.0（24 手预算 · 护盾反击）。</p>
+    <div class="picks">
+      <button class="pick" data-f="bulwark">
+        <div class="ph"><span class="dot" style="background:var(--bulwark)"></span><span class="nm">壁垒</span></div>
+        <ul><li>造护盾 <b>+3</b></li><li>每座炮台伤害 <b>1</b></li><li>开局护盾 0</li></ul>
+        <p class="lead" style="margin:10px 0 0">用护盾墙拖住对手，靠反伤与节奏反打。</p>
+      </button>
+      <button class="pick" data-f="striker">
+        <div class="ph"><span class="dot" style="background:var(--striker)"></span><span class="nm">突击</span></div>
+        <ul><li>造护盾 <b>+2</b></li><li>每座炮台伤害 <b>2</b></li><li>开局护盾 <b>+1</b>（平衡补偿）</li></ul>
+        <p class="lead" style="margin:10px 0 0">少量炮台即可破防，追求早期压制。</p>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 结算 -->
+<div class="modal hidden" id="endModal">
+  <div class="panel">
+    <div class="result">
+      <div class="big" id="endTitle">—</div>
+      <div class="sub" id="endWhy">—</div>
+      <div class="kv">
+        <div class="box"><div class="h" id="endH1">玩家1</div><div class="v" id="endV1"></div></div>
+        <div class="box"><div class="h" id="endH2">玩家2</div><div class="v" id="endV2"></div></div>
+      </div>
+      <button class="again" id="againBtn">再来一局</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('error', e => { document.title = 'ERR ' + (e.message || 'unknown'); });
+</script>
+<script id="rules-core">
+/* ============================================================
+ * TurretWar 3.0 规则核心 —— 纯函数，不碰 DOM。
+ * 这段代码由 node 单测与 Python 求解器逐手对拍（见 verify.js）。
+ * ============================================================ */
+const TW = (() => {
+  const BASE_HP = 3, BUDGET = 24, REFLECT_DIV = 2;
+  const FACTIONS = {
+    bulwark: { id:'bulwark', name:'壁垒', sigil:'壁', shieldGain:3, dmg:1, startShield:0, color:'#35c7d8' },
+    striker: { id:'striker', name:'突击', sigil:'突', shieldGain:2, dmg:2, startShield:1, color:'#ff8a3d' },
+  };
+  const ACTIONS = ['buildTurret','buildShield','attack'];
+
+  function newState(p1FactionId){
+    const f1 = FACTIONS[p1FactionId] || FACTIONS.bulwark;
+    const f2 = FACTIONS[f1.id === 'bulwark' ? 'striker' : 'bulwark'];
+    const mk = (f) => ({ faction:f.id, hp:BASE_HP, turrets:0, shields:f.startShield,
+                         builtTurrets:0, builtShields:0, dealt:0 });
+    return { ply:0, p1:mk(f1), p2:mk(f2), over:false, winner:null, why:null };
+  }
+
+  function sideOf(s, who){ return who===1 ? s.p1 : s.p2; }
+  function faction(s, who){ return FACTIONS[sideOf(s,who).faction]; }
+
+  /* 伤害结算：护盾 -> 炮台 -> 基地；返回被护盾吸收的点数 */
+  function applyDamage(side, dmg){
+    let absorbed = 0;
+    while (dmg > 0 && side.hp > 0){
+      if (side.shields > 0){ side.shields--; absorbed++; }
+      else if (side.turrets > 0){ side.turrets--; }
+      else { side.hp--; }
+      dmg--;
+    }
+    return absorbed;
+  }
+
+  /* 执行一步行动，返回事件列表（供 UI 播动画） */
+  function step(state, who, action){
+    if (state.over) return [];
+    const s = state, me = sideOf(s, who), op = sideOf(s, who===1?2:1);
+    const fm = FACTIONS[me.faction], fo = FACTIONS[op.faction];
+    const ev = [{ type:'begin', who, action }];
+    const snap = (x) => ({h:x.hp,t:x.turrets,s:x.shields});
+
+    if (action === 'buildTurret'){
+      me.turrets++; me.builtTurrets++;
+      ev.push({ type:'turret', who, amount:1 });
+    } else if (action === 'buildShield'){
+      me.shields += fm.shieldGain; me.builtShields += fm.shieldGain;
+      ev.push({ type:'shield', who, amount:fm.shieldGain });
+    } else {
+      const dmg = me.turrets * fm.dmg;
+      if (dmg > 0 && op.hp > 0){
+        const before = snap(op);
+        const absorbed = applyDamage(op, dmg);
+        const loss = (before.s-op.shields)+(before.t-op.turrets)+(before.h-op.hp);
+        me.dealt += loss;
+        ev.push({ type:'attack', who, target: who===1?2:1, dmg, absorbed, loss,
+                  reflected:0, hitBase: before.h-op.hp });
+        if (op.hp <= 0){
+          s.over = true; s.winner = who; s.why = 'kill';
+          ev.push({ type:'kill', who });
+        } else {
+          const refl = Math.floor(absorbed / REFLECT_DIV);
+          if (refl > 0){
+            const b2 = snap(me);
+            applyDamage(me, refl);
+            op.dealt += (b2.s-me.shields)+(b2.t-me.turrets)+(b2.h-me.hp);
+            ev[ev.length-1].reflected = refl;
+            ev.push({ type:'reflect', who, target:who, amount:refl });
+            if (me.hp <= 0){ s.over = true; s.winner = who===1?2:1; s.why='reflect'; ev.push({type:'kill',who:s.winner}); }
+          }
+        }
+      } else {
+        ev.push({ type:'attack', who, target:who===1?2:1, dmg:0, absorbed:0, loss:0, reflected:0, hitBase:0 });
+      }
+    }
+
+    if (!s.over){
+      s.ply++;
+      if (s.ply >= BUDGET){
+        s.over = true;
+        const judge = judgeDeadline(s);
+        s.winner = judge; s.why = judge ? 'deadline' : 'draw';
+        ev.push({ type:'deadline', winner:judge });
+      }
+    } else {
+      s.ply++;
+    }
+    return ev;
+  }
+
+  function forces(side){ return side.turrets + side.shields; }
+
+  function judgeDeadline(s){
+    if (s.p1.hp !== s.p2.hp) return s.p1.hp > s.p2.hp ? 1 : 2;
+    const f1 = forces(s.p1), f2 = forces(s.p2);
+    if (f1 !== f2) return f1 > f2 ? 1 : 2;
+    return 0;
+  }
+
+  function turnOf(s){ return s.ply % 2 === 0 ? 1 : 2; }   /* ply 已完成的步数 */
+
+  return { BASE_HP, BUDGET, REFLECT_DIV, FACTIONS, ACTIONS, newState, step, judgeDeadline,
+           forces, turnOf, sideOf, faction };
+})();
+if (typeof module !== 'undefined') module.exports = TW;
+</script>
+
+<script>
+/* ============================================================
+ * UI 层
+ * ============================================================ */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = {};
+
+  let S = null;
+  let busy = false;
+
+  const log = (txt, cls='') => {
+    const p = document.createElement('p');
+    if (cls) p.className = cls;
+    const t = document.createElement('span'); t.className='t';
+    t.textContent = S ? `#${String(S.ply).padStart(2,'0')}` : '';
+    const b = document.createElement('span'); b.innerHTML = txt;
+    p.appendChild(t); p.appendChild(b);
+    el.log.appendChild(p);
+    el.log.scrollTop = el.log.scrollHeight;
+  };
+
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- 渲染 ---------- */
+  function render(){
+    if (!S) return;                      /* 开局前不渲染，避免 S 为 null */
+    const p1 = S.p1, p2 = S.p2, f1 = TW.FACTIONS[p1.faction], f2 = TW.FACTIONS[p2.faction];
+    el.ply.textContent = S.ply;
+    const left = Math.max(0, TW.BUDGET - S.ply);
+    el.deadlineBar.style.width = (left / TW.BUDGET * 100) + '%';
+    el.deadline.classList.toggle('warn', left <= 4);
+
+    const turn = S.over ? 0 : TW.turnOf(S);
+    el.turnwho.innerHTML = S.over ? '对局结束' : `轮到 <b>玩家${turn}</b>`;
+
+    fillSide(1, p1, f1); fillSide(2, p2, f2);
+
+    el.side1.classList.toggle('active', turn === 1);
+    el.side2.classList.toggle('active', turn === 2);
+
+    /* 战线条：按双方兵力归一化 */
+    const fA = TW.forces(p1), fB = TW.forces(p2), scale = Math.max(fA, fB, 8);
+    $('bar1').style.width = (fA/scale*100).toFixed(1) + '%';
+    $('bar2').style.width = (fB/scale*100).toFixed(1) + '%';
+    $('laneF1').textContent = fA; $('laneF2').textContent = fB;
+    $('laneName1').textContent = `玩家1 · ${f1.name}`;
+    $('laneName2').textContent = `玩家2 · ${f2.name}`;
+    $('laneHint').textContent = S.over
+      ? '对局结束'
+      : `剩余 ${left} 手 · 超时先比基地血，再比剩余兵力`;
+
+    const cur = turn ? TW.sideOf(S, turn) : null;
+    const fac = turn ? TW.faction(S, turn) : null;
+
+    el.d0.textContent = cur ? `+1 座（现有 ${cur.turrets}）` : '—';
+    el.d1.textContent = cur ? `+${fac.shieldGain} 护盾（现有 ${cur.shields}）` : '—';
+    el.d2.textContent = cur ? `炮台 ${cur.turrets} × ${fac.dmg} = ${cur.turrets*fac.dmg} 伤害` : '—';
+
+    const dis = S.over || busy;
+    [el.a0, el.a1, el.a2].forEach(b => b.disabled = dis);
+  }
+
+  function fillSide(n, p, f){
+    const badge = $('badge'+n), name = $('name'+n), sub = $('sub'+n);
+    badge.textContent = f.sigil; badge.style.background = f.color;
+    name.textContent = f.name;
+    sub.textContent = `造护盾 +${f.shieldGain} · 伤害 ${f.dmg}`;
+
+    /* HP 条 */
+    const hpBox = $('hp'+n);
+    if (hpBox.childElementCount !== TW.BASE_HP){
+      hpBox.innerHTML = '';
+      for (let i=0;i<TW.BASE_HP;i++){ const d=document.createElement('div'); d.className='pip'; hpBox.appendChild(d); }
+    }
+    [...hpBox.children].forEach((d,i)=>{
+      const on = i < p.hp;
+      const was = d.classList.contains('on');
+      d.classList.toggle('on', on);
+      if (was && !on) { d.classList.remove('hurt'); void d.offsetWidth; d.classList.add('hurt'); }
+    });
+    $('hpNum'+n).textContent = p.hp;
+    $('shNum'+n).textContent = p.shields;
+    $('tuNum'+n).textContent = p.turrets;
+    $('force'+n).textContent = TW.forces(p);
+
+    /* 护盾点 */
+    const sp = $('shPips'+n);
+    const cap = Math.max(8, p.shields);
+    while (sp.childElementCount < cap){ sp.appendChild(document.createElement('span')); }
+    while (sp.childElementCount > cap){ sp.removeChild(sp.lastChild); }
+    [...sp.children].forEach((d,i)=>{
+      const on = i < p.shields;
+      const was = d.classList.contains('on');
+      d.classList.toggle('on', on);
+      if (on && !was){ d.classList.remove('new'); void d.offsetWidth; d.classList.add('new'); }
+    });
+  }
+
+  /* ---------- 动画 ---------- */
+  function centerOf(node){
+    const r = node.getBoundingClientRect();
+    return { x: r.left + r.width/2, y: r.top + r.height/2 };
+  }
+
+  function flyer(from, to, color, arc=90, dur=380){
+    if (reduced()) return Promise.resolve();
+    return new Promise(res => {
+      const a = centerOf(from), b = centerOf(to);
+      const d = document.createElement('div');
+      d.className='flyer'; d.style.setProperty('--c', color);
+      d.style.left = (a.x-7)+'px'; d.style.top = (a.y-7)+'px';
+      document.body.appendChild(d);
+      let done = false, timer = null;
+      /* 兜底：某些环境（如后台标签页、无头渲染未启用）不会触发 rAF，
+         这里用定时器保证 promise 一定会 resolve，避免整局卡死 */
+      const finish = () => { if (done) return; done = true; if (timer) clearTimeout(timer); d.remove(); res(); };
+      timer = setTimeout(finish, dur + 220);
+      const t0 = performance.now();
+      const tick = (t) => {
+        const k = Math.min(1,(t-t0)/dur);
+        const x = a.x + (b.x-a.x)*k;
+        const y = a.y + (b.y-a.y)*k - Math.sin(k*Math.PI)*arc;
+        d.style.transform = `translate(${x-a.x}px,${y-a.y}px)`;
+        if (k < 1) requestAnimationFrame(tick); else finish();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  function ringAt(node, color){
+    if (reduced()) return;
+    const c = centerOf(node);
+    const d = document.createElement('div');
+    d.className='ringfx';
+    d.style.setProperty('--c', color);
+    d.style.width = d.style.height = '56px';
+    d.style.left = (c.x-28)+'px'; d.style.top = (c.y-28)+'px';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 460);
+  }
+
+  function shake(node, cls='shake'){
+    if (reduced()) return;
+    node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls);
+    setTimeout(()=>node.classList.remove(cls), 300);
+  }
+
+  /* 画布粒子 */
+  const cvs = $('fx'); const ctx = cvs.getContext('2d');
+  let parts = [], raf = null;
+  function resize(){
+    const r = cvs.getBoundingClientRect();
+    cvs.width = r.width * devicePixelRatio; cvs.height = r.height * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  }
+  addEventListener('resize', resize);
+
+  function burst(node, color, n=14){
+    if (reduced()) return;
+    const c = centerOf(node), r = cvs.getBoundingClientRect();
+    for (let i=0;i<n;i++){
+      const ang = Math.random()*Math.PI*2, sp = 1.4 + Math.random()*3.4;
+      parts.push({ x:c.x-r.left, y:c.y-r.top, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp-1,
+                   life:1, color, size:1.6+Math.random()*2.2 });
+    }
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+
+  function loop(){
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    parts = parts.filter(p => p.life > 0);
+    for (const p of parts){
+      p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= 0.022;
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (parts.length) raf = requestAnimationFrame(loop);
+    else { raf = null; ctx.clearRect(0,0,cvs.width,cvs.height); }
+  }
+
+  /* ---------- 行动流程 ---------- */
+  const sleep = (ms) => new Promise(r => setTimeout(r, reduced()?0:ms));
+  const cardOf = (n) => (n===1 ? el.card1 : el.card2);
+
+  async function play(actionName){
+    if (!S || S.over || busy) return;
+    busy = true; render();
+    const who = TW.turnOf(S);
+    const ev = TW.step(S, who, actionName);
+    const myCard = cardOf(who), foeCard = cardOf(who===1?2:1);
+    const myFac = TW.faction(S, who), foeFac = TW.faction(S, who===1?2:1);
+
+    for (const e of ev){
+      switch(e.type){
+        case 'turret':
+          log(`<b>玩家${e.who}</b> 建造炮台 +1`); ringAt(cardOf(e.who), myFac.color); await sleep(140); break;
+        case 'shield':
+          log(`<b>玩家${e.who}</b> 建造护盾 +${e.amount}`, 'gold'); ringAt(cardOf(e.who), '#ffd166'); await sleep(140); break;
+        case 'attack': {
+          if (e.dmg === 0){ log(`<b>玩家${e.who}</b> 没有炮台，这次进攻空放`); break; }
+          log(`<b>玩家${e.who}</b> 发起进攻：${e.dmg} 点伤害`);
+          await flyer(myCard, foeCard, myFac.color);
+          burst(foeCard, myFac.color, 16);
+          if (e.hitBase > 0 || e.loss > 0){
+            shake(foeCard); foeCard.classList.add('flash');
+            setTimeout(()=>foeCard.classList.remove('flash'), 400);
+          }
+          if (e.absorbed > 0) log(`护盾吸收 ${e.absorbed} 点`, 'gold');
+          if (e.hitBase > 0) log(`<b>基地受到 ${e.hitBase} 点伤害</b>`, 'hit');
+          render(); await sleep(220); break;
+        }
+        case 'reflect':
+          log(`护盾反击：<b>玩家${e.who}</b> 受到 ${e.amount} 点反伤`, 'hit');
+          await flyer(foeCard, myCard, '#ff4d6d', 60, 300);
+          burst(myCard, '#ff4d6d', 10); shake(myCard);
+          render(); await sleep(160); break;
+        case 'kill':
+          log(`<b>玩家${e.who} 击毁对方基地</b>`, 'good'); render(); await sleep(240); break;
+        case 'deadline':
+          log(e.winner ? `24 手用完，超时判分：<b>玩家${e.winner} 胜</b>` : '24 手用完，判和棋'); break;
+      }
+    }
+    busy = false;
+    render();
+    if (S.over) setTimeout(showEnd, 520);
+  }
+
+  /* ---------- 结算 ---------- */
+  function showEnd(){
+    const f1 = TW.FACTIONS[S.p1.faction], f2 = TW.FACTIONS[S.p2.faction];
+    let title, why;
+    if (S.why === 'kill') { title = `玩家${S.winner} 击杀获胜`; why = '在 24 手预算内击毁对方基地。'; }
+    else if (S.why === 'reflect') { title = `玩家${S.winner} 反伤获胜`; why = '对方的进攻被护盾反弹致死。'; }
+    else if (S.why === 'deadline') { title = `玩家${S.winner} 超时判分获胜`; why = '双方基地血相同，比较剩余兵力。'; }
+    else { title = '和棋'; why = '基地血与剩余兵力完全相同。'; }
+    $('endTitle').textContent = title;
+    $('endWhy').textContent = why + `（${S.ply} 手 / 24）`;
+    $('endH1').textContent = `玩家1 · ${f1.name}`;
+    $('endH2').textContent = `玩家2 · ${f2.name}`;
+    const line = (p) => `基地 ${p.hp} · 炮台 ${p.turrets} · 护盾 ${p.shields}<br>
+      累计伤害 ${p.dealt} · 造炮台 ${p.builtTurrets} · 造护盾 ${p.builtShields}`;
+    $('endV1').innerHTML = line(S.p1);
+    $('endV2').innerHTML = line(S.p2);
+    $('endModal').classList.remove('hidden');
+  }
+
+  /* ---------- 开局 ---------- */
+  function start(factionId){
+    S = TW.newState(factionId);
+    el.log.innerHTML = '';
+    $('pickModal').classList.add('hidden');
+    $('endModal').classList.add('hidden');
+    resize();
+    const f1 = TW.FACTIONS[S.p1.faction], f2 = TW.FACTIONS[S.p2.faction];
+    log(`玩家1 选择 <b>${f1.name}</b>，玩家2 使用 <b>${f2.name}</b>`);
+    log('规则：24 手预算 · 护盾反击 · 超时比基地血再比兵力');
+    render();
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  document.addEventListener('DOMContentLoaded', () => {
+    Object.assign(el, {
+      ply:$('ply'), deadline:$('deadline'), deadlineBar:$('deadlineBar'), turnwho:$('turnwho'),
+      side1:$('side1'), side2:$('side2'), card1:$('card1'), card2:$('card2'),
+      a0:$('a0'), a1:$('a1'), a2:$('a2'), d0:$('d0'), d1:$('d1'), d2:$('d2'),
+      log:$('log')
+    });
+    resize();
+    [el.a0, el.a1, el.a2].forEach(b => b.addEventListener('click', () => play(TW.ACTIONS[+b.dataset.a])));
+    addEventListener('keydown', (e) => {
+      if ($('endModal').classList.contains('hidden') === false) { if (e.key === 'r' || e.key === 'R') location.reload(); return; }
+      if (!S || S.over) return;
+      if (e.key === '1') play('buildTurret');
+      if (e.key === '2') play('buildShield');
+      if (e.key === '3') play('attack');
+    });
+    document.querySelectorAll('.pick').forEach(p => p.addEventListener('click', () => start(p.dataset.f)));
+    $('againBtn').addEventListener('click', () => location.reload());
+    render();
+
+    /* 交互自测：#autoplay 走真实 play() 路径（含动画），用于无头验证 */
+    if (location.hash.indexOf('autoplay') >= 0) {
+      setTimeout(async () => {
+        start('striker');
+        for (const a of ['buildTurret','buildTurret','buildShield','buildTurret','attack']) {
+          await play(a);
+        }
+        document.title = 'AUTOPLAY-OK ply=' + S.ply;
+      }, 30);
+    }
+
+    /* 演示模式：#demo 直接进入中局，便于截图/预览 */
+    if ((location.search + location.hash).indexOf('demo') >= 0) {
+      setTimeout(() => {
+        start('striker');
+        const seq = ['buildTurret','buildTurret','buildShield','buildTurret','attack',
+                     'buildShield','attack','buildTurret','attack','buildShield'];
+        for (const a of seq) {
+          if (S.over) break;
+          const who = TW.turnOf(S);
+          const ev = TW.step(S, who, a);
+          const hit = ev.find(e => e.type === 'attack');
+          if (a === 'attack') log(`<b>玩家${who}</b> 进攻 ${hit.dmg} 点 · 护盾吸收 ${hit.absorbed} · 基地 -${hit.hitBase}`);
+          else if (a === 'buildShield') log(`<b>玩家${who}</b> 建造护盾`, 'gold');
+          else log(`<b>玩家${who}</b> 建造炮台`);
+        }
+        render();
+        log('（演示模式：已自动走 10 手）');
+      }, 40);
+    }
+  });
+})();
+</script>
+</body>
+</html>
