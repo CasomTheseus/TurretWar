@@ -129,13 +129,13 @@ void printGameSummary(Player *player1, Player *player2) {
     printf("\n===== 游戏结算 =====\n");
     printf("玩家1累计建造护盾量：%d\n", player1->totalShieldsBuilt);
     printf("玩家1累计建造炮台量：%d\n", player1->totalTurretsBuilt);
-    printf("玩家1累计造成伤害量：%d\n", player1->totalDamageDealt);
+    printf("玩家1累计造成伤害量（实际命中，不含溢出炮弹）：%d\n", player1->totalDamageDealt);
     printf("玩家1剩余兵力：%d（炮台%d + 护盾%d）\n",
            player1->turretCount + player1->shieldCount, player1->turretCount, player1->shieldCount);
     printf("------------------------\n");
     printf("玩家2累计建造护盾量：%d\n", player2->totalShieldsBuilt);
     printf("玩家2累计建造炮台量：%d\n", player2->totalTurretsBuilt);
-    printf("玩家2累计造成伤害量：%d\n", player2->totalDamageDealt);
+    printf("玩家2累计造成伤害量（实际命中，不含溢出炮弹）：%d\n", player2->totalDamageDealt);
     printf("玩家2剩余兵力：%d（炮台%d + 护盾%d）\n",
            player2->turretCount + player2->shieldCount, player2->turretCount, player2->shieldCount);
     printf("====================\n");

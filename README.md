@@ -1,5 +1,36 @@
-# TurretWar,”炮台战争“简介
+# TurretWar，“炮台战争”简介
 持续更新的小游戏，正在进行可视化尝试。
+
+# 编译与运行
+
+各版本都是单文件程序：文件名是 `.cpp`，内容其实是纯 C（同时也能当 C++ 编译）。**注意**：直接 `clang -std=c11 xxx.cpp` 会因为后缀被当成 C++ 而报错，必须显式指定语言。
+
+```bash
+# 2.0
+clang -x c -std=c11 -O2 -o turretwar2 TurretWar.AlphaTest_2.0.cpp
+./turretwar2
+
+# 1.x 同理
+clang -x c -std=c11 -O2 -o turretwar1 TurretWar.AlphaTest_1.2.2.cpp
+
+# 也可以用 C++ 编译器
+g++ -O2 -o turretwar2 TurretWar.AlphaTest_2.0.cpp
+
+# 关掉 2.0 开场动画的等待（方便测试）
+clang -x c -std=c11 -DINTRO_DELAY=0 -o turretwar2 TurretWar.AlphaTest_2.0.cpp
+```
+
+（`1.2.1` / `1.2.2` 的源码是 GBK，clang 编译时会提示编码警告，不影响生成可执行文件，详见下方编码说明。）
+
+程序用到 `<unistd.h>` 的 `sleep()`，属于 POSIX 接口：Linux / macOS 可直接编译；Windows 建议用 MinGW 或 WSL，或把相关调用换成 `Sleep()`。
+
+# 编码说明
+
+- UTF-8：`AlphaTest`、`AlphaTest_1.1`、`AlphaTest_1.2`、`AlphaTest_2.0`、本 README 及文档
+- GBK / ANSI：`AlphaTest_1.2.1`、`AlphaTest_1.2.2`（早期在中文 Windows 编辑器下保存）
+
+在 UTF-8 环境里打开后者可能显示乱码；用 MSVC 编译 UTF-8 源文件时请加 `/utf-8`。为保留各版本的原始快照，历史文件未做编码转换。
+
 # 更新日志
 ## AlphaTest
 Published on 2025.3.19
