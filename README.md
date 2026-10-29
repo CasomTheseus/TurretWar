@@ -1,6 +1,8 @@
 # TurretWar，“炮台战争”简介
 持续更新的小游戏，正在进行可视化尝试。
 
+**在线游玩（网页版 4.0）：<https://casomthesus.github.io/TurretWar/>**
+
 # 编译与运行
 
 各版本都是单文件程序：文件名是 `.cpp`，内容其实是纯 C（同时也能当 C++ 编译）。**注意**：直接 `clang -std=c11 xxx.cpp` 会因为后缀被当成 C++ 而报错，必须显式指定语言。
@@ -80,3 +82,4 @@ Published on 2026.10.28
   - 动画：弹道飞行、命中粒子、冲击环、受击震屏、护盾点弹出、护盾反击回弹；支持 prefers-reduced-motion.
   - 验证：规则核与求解器逐手对拍（200局随机对局全部一致）；无头浏览器交互自测零错误.
   - 打开方式：双击 web/index.html；地址后加 #demo 进演示中局，加 #autoplay 自动演示5手.
+  - 在线地址：https://casomthesus.github.io/TurretWar/ （站点根目录自动跳转到 web/）.
