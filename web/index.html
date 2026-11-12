@@ -3,335 +3,536 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TurretWar 4.0 · 网页版</title>
+<title>TurretWar · 炮台战争</title>
 <style>
 /* ============ 设计令牌 ============ */
 :root{
-  --bg:#0a0f1e; --bg2:#0e1530; --panel:#111a33; --panel2:#0d1529;
-  --line:#1d2a4d; --line2:#2a3a66;
-  --text:#e8eeff; --muted:#8fa1c9; --dim:#5b6b93;
-  --bulwark:#35c7d8; --striker:#ff8a3d;
-  --danger:#ff4d6d; --ok:#4ade80; --gold:#ffd166;
-  --r:14px; --t-fast:120ms; --t:180ms; --ease:cubic-bezier(.22,.9,.28,1);
+  --table:#14110d; --table-2:#100e0a;
+  --panel:#201a13; --panel-2:#191510; --raised:#2a2219;
+  --line:rgba(232,220,196,.14); --line-2:rgba(232,220,196,.28);
+  --text:#ece3d2; --muted:#b5a78f; --dim:#92836c;
+  --paper:#e8dcc2; --paper-2:#ded0b2; --paper-line:rgba(36,31,23,.12);
+  --ink:#241f17; --ink-2:#5d5241;
+  --brass:#c99a4b; --brass-2:#e0b968;
+  --bulwark:#3f7f78; --striker:#b4472f;
+  --danger:#a33a2a; --danger-text:#d07a5f;
+  --ok:#5d7a4e; --ok-text:#9bb783;
+  --r:12px;
+  --serif:"Songti SC","STSong","SimSun",Georgia,serif;
+  --sans:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --t-fast:120ms; --t:180ms;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; background:
-    radial-gradient(1200px 600px at 50% -10%, #16223f 0%, transparent 60%),
-    radial-gradient(800px 400px at 10% 110%, #101b36 0%, transparent 60%),
-    var(--bg);
-  color:var(--text);
-  font:15px/1.5 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  margin:0; background:var(--table); color:var(--text);
+  font:14px/1.5 var(--sans);
   -webkit-font-smoothing:antialiased; overflow:hidden;
 }
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:14px;padding:16px 18px}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ico-svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;
+  stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+
+.app{
+  height:100%; max-width:1600px; margin:0 auto;
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto;
+  gap:16px; padding:20px 24px;
+}
 
 /* ============ 顶栏 ============ */
-.topbar{display:flex;align-items:center;gap:18px}
-.brand{display:flex;align-items:baseline;gap:10px;min-width:220px}
-.brand h1{margin:0;font-size:19px;letter-spacing:.5px;font-weight:700}
-.brand .ver{font-size:11px;color:var(--dim);letter-spacing:1px}
-.turnbox{display:flex;align-items:center;gap:12px;background:var(--panel);
-  border:1px solid var(--line);border-radius:var(--r);padding:8px 14px}
-.turnbox .label{font-size:12px;color:var(--muted)}
-.turnbox .num{font-size:22px;font-weight:800;letter-spacing:.5px}
-.turnbox .num small{font-size:13px;color:var(--dim);font-weight:600}
-.deadline{flex:1;height:8px;background:#0b132b;border-radius:99px;
-  overflow:hidden;border:1px solid var(--line);position:relative}
-.deadline > i{display:block;height:100%;width:100%;border-radius:99px;
-  background:linear-gradient(90deg,#3b82f6,#22d3ee);transform-origin:left center;
-  transition:width 260ms var(--ease), background 260ms linear}
-.deadline.warn > i{background:linear-gradient(90deg,#f59e0b,#ef4444);animation:pulseBar 900ms ease-in-out infinite}
-@keyframes pulseBar{50%{opacity:.55}}
-.turnwho{font-size:12px;color:var(--muted);min-width:96px;text-align:right}
-.turnwho b{color:var(--text)}
+.topbar{display:flex;align-items:center;gap:24px;min-height:56px}
+.brand{display:flex;align-items:baseline;gap:12px;min-width:230px}
+.brand h1{margin:0;font:600 22px/1 var(--serif);letter-spacing:.01em;color:var(--text)}
+.brand .sub{font-size:12px;color:var(--dim);letter-spacing:.02em;white-space:nowrap}
+.turn{display:flex;align-items:center;gap:16px;flex:1;min-width:0}
+.turn-label{font-size:13px;color:var(--muted);white-space:nowrap}
+.turn-label b{font-size:18px;color:var(--text);font-weight:600;margin:0 1px}
+.turn-label .total{color:var(--dim)}
+.notches{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;
+  flex:1;height:20px;align-items:end}
+.notch{height:8px;background:var(--raised);border:1px solid var(--line);border-radius:1px;
+  transition:background-color var(--t) var(--ease),border-color var(--t) var(--ease),transform var(--t-fast) var(--ease)}
+.notch.done{background:var(--brass);border-color:var(--brass)}
+.notch.late{border-color:rgba(180,71,47,.35)}
+.notch.now{background:var(--paper);border-color:var(--paper);transform:scaleY(2);transform-origin:bottom}
+.notch.done.now{background:var(--brass-2)}
+.turnwho{font-size:13px;color:var(--muted);white-space:nowrap;
+  display:flex;align-items:center;gap:8px;min-width:120px;justify-content:flex-end}
+.turnwho b{color:var(--text);font-weight:500}
+.turnwho .dot{width:8px;height:8px;border-radius:2px;background:var(--dim);
+  border:1px solid rgba(0,0,0,.25);flex:0 0 auto}
 
 /* ============ 主区 ============ */
-.board{display:grid;grid-template-columns:minmax(220px,260px) 1fr minmax(220px,260px);
-  gap:16px;align-items:stretch;min-height:0}
-.side{display:flex;flex-direction:column;gap:10px;min-height:0}
-.side.active .card{border-color:var(--line2);box-shadow:0 0 0 1px rgba(255,255,255,.02),0 12px 40px -18px #000}
-.card{background:linear-gradient(180deg,var(--panel),var(--panel2));
-  border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.who{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.badge{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
-  font-weight:800;font-size:13px;color:#04101f}
-.who .name{font-weight:700;font-size:15px}
-.who .sub{font-size:11px;color:var(--muted);margin-top:1px}
-.who .active-tag{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:99px;
-  border:1px solid var(--line2);color:var(--dim);opacity:0;transition:opacity var(--t) var(--ease)}
-.side.active .active-tag{opacity:1;color:var(--text);border-color:currentColor}
+.board{
+  display:grid;grid-template-columns:260px minmax(0,1fr) 260px;
+  grid-template-areas:"s1 table s2";
+  gap:16px;min-height:0;align-items:stretch;
+}
+#side1{grid-area:s1}
+#side2{grid-area:s2}
 
-.hp{display:flex;gap:6px;align-items:center;margin:2px 0 10px}
-.hp .pip{flex:1;height:12px;border-radius:99px;background:#1a2342;
-  border:1px solid #24325c;transition:background var(--t) var(--ease), transform var(--t) var(--ease)}
-.hp .pip.on{background:linear-gradient(180deg,#34d399,#10b981);border-color:#2fbf87;
-  box-shadow:0 0 14px -4px #10b981}
-.hp .pip.hurt{animation:hurt 380ms var(--ease)}
-@keyframes hurt{0%{transform:scaleY(1)}30%{transform:scaleY(1.9)}100%{transform:scaleY(1)}}
+/* ---- 军令卡 ---- */
+.side{min-height:0;display:flex;width:100%;align-items:center}
+.dossier{width:100%;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;
+  transition:border-color var(--t) var(--ease)}
+.side.active .dossier{border-color:var(--brass)}
+.who{display:flex;align-items:center;gap:12px;min-width:0}
+.who-text{min-width:0}
+.seal{width:40px;height:40px;flex:0 0 40px;border-radius:6px;display:grid;place-items:center;
+  font:600 20px/1 var(--serif);color:var(--paper);
+  border:1px solid rgba(0,0,0,.3);background:var(--bulwark)}
+.who .name{font-size:16px;font-weight:600;color:var(--text);line-height:1.2}
+.who .sub{font-size:12px;color:var(--muted);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.active-tag{margin-left:auto;font-size:12px;color:var(--brass);
+  border:1px solid var(--brass);border-radius:4px;padding:2px 6px;
+  opacity:0;transition:opacity var(--t) var(--ease);flex:0 0 auto}
+.side.active .active-tag{opacity:1}
 
-.stat{display:flex;justify-content:space-between;align-items:center;padding:5px 0;
-  border-top:1px dashed #1b2746;font-size:13px;color:var(--muted)}
-.stat:first-of-type{border-top:0}
-.stat b{color:var(--text);font-size:15px}
-.stat .ico{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:6px;
-  font-size:12px;border-radius:6px;background:#15203c}
-.pips-shield{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-.pips-shield span{width:9px;height:9px;border-radius:3px;background:#1b2748;
-  transition:background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease)}
-.pips-shield span.on{background:var(--gold);box-shadow:0 0 10px -3px var(--gold)}
-.pips-shield span.new{animation:pop 260ms var(--ease)}
-@keyframes pop{0%{transform:scale(.3)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
-
-/* ============ 战场 ============ */
-.mid{position:relative;border-radius:var(--r);overflow:hidden;min-height:0;
-  background:
-    linear-gradient(180deg,rgba(53,199,216,.05),transparent 40%,rgba(255,138,61,.05)),
-    repeating-linear-gradient(90deg,transparent 0 47px,#1a2748 47px 48px),
-    repeating-linear-gradient(0deg,transparent 0 47px,#1a2748 47px 48px),
-    #0b1226;
+.ledger{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:8px;
+  padding:8px 0;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.row:first-child{border-top:0}
+.row .ico{color:var(--dim);display:grid;place-items:center}
+.row b{font-size:14px;font-weight:600;color:var(--text)}
+.hp{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 0 8px 24px}
+.hp .pip{height:6px;border-radius:1px;background:var(--raised);
+  border:1px solid var(--line);
+  transition:background-color var(--t) var(--ease),border-color var(--t) var(--ease)}
+.hp .pip.on{background:var(--ok);border-color:rgba(93,122,78,.7)}
+.hp .pip.hurt{animation:hurt 260ms var(--ease)}
+@keyframes hurt{0%,100%{transform:translateY(0)}40%{transform:translateY(-2px)}}
+.pips-shield{display:flex;flex-wrap:wrap;gap:3px;padding:0 0 8px 24px;min-height:8px;align-items:center;gap:4px}
+.pips-shield span{width:8px;height:8px;border-radius:1px;background:var(--raised);
   border:1px solid var(--line)}
-.mid::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(600px 300px at 50% 55%,transparent 30%,rgba(0,0,0,.45))}
-.lane{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
-  display:flex;align-items:center;gap:12px;padding:0 18px;pointer-events:none}
-.lane .sideStat{display:flex;flex-direction:column;gap:2px;min-width:58px}
-.lane .sideStat.right{text-align:right}
-.lane .sideStat .nm{font-size:11px;color:var(--muted)}
-.lane .sideStat b{font-size:20px;font-weight:800}
-.lane .track{flex:1;height:10px;border-radius:99px;background:#0d1730;
-  border:1px solid var(--line);overflow:hidden;display:flex}
-.lane .track:first-of-type{justify-content:flex-end}
-.lane .track i{display:block;height:100%;width:0%;border-radius:99px;
-  transition:width 420ms var(--ease)}
-#bar1{background:linear-gradient(90deg,#35c7d8,#60e0ef)}
-#bar2{background:linear-gradient(90deg,#ff8a3d,#ffb066)}
-.lane .emblem{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
-  font-size:13px;font-weight:800;letter-spacing:1px;color:var(--muted);
-  border:1px solid var(--line2);background:radial-gradient(circle,rgba(30,44,80,.8),transparent 72%)}
-.laneHint{position:absolute;left:0;right:0;top:calc(50% + 46px);text-align:center;
-  font-size:12px;color:var(--dim);pointer-events:none}
-.vs{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
-.vs .ring{width:118px;height:118px;border-radius:50%;border:1px solid #223257;
-  display:grid;place-items:center;color:var(--dim);font-size:11px;letter-spacing:3px;
-  background:radial-gradient(circle,rgba(30,44,80,.55),transparent 70%)}
-#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pips-shield span.on{background:var(--brass);border-color:var(--brass)}
+.pips-shield span.new{animation:pop 220ms var(--ease)}
+.pips-shield .more{font:500 12px/1 var(--mono);color:var(--dim);font-style:normal;margin-left:2px}
+@keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* ---- 沙盘 ---- */
+.table{
+  grid-area:table;position:relative;min-height:0;height:min(100%,420px);align-self:center;border-radius:var(--r);
+  background:var(--paper);color:var(--ink);
+  border:1px solid rgba(36,31,23,.42);
+  box-shadow:0 20px 44px -30px rgba(0,0,0,.9);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.table::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 159px,rgba(36,31,23,.17) 159px 160px),
+    repeating-linear-gradient(90deg,transparent 0 159px,rgba(36,31,23,.17) 159px 160px),
+    repeating-linear-gradient(0deg,transparent 0 39px,var(--paper-line) 39px 40px),
+    repeating-linear-gradient(90deg,transparent 0 39px,var(--paper-line) 39px 40px)}
+.table-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:12px 16px 0;font-size:12px;color:var(--ink-2)}
+.table-top .hint{color:var(--ink-2);text-align:center}
+.field{position:relative;z-index:2;flex:1;display:grid;
+  grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
+  padding:12px 20px 20px;min-height:0}
+.field::before{content:"";position:absolute;left:0;right:0;top:50%;height:128px;
+  transform:translateY(-50%);background:rgba(36,31,23,.045);
+  border-top:1px solid rgba(36,31,23,.16);border-bottom:1px solid rgba(36,31,23,.16);
+  pointer-events:none}
+.force,.front{position:relative;z-index:1}
+.force{display:flex;align-items:center;gap:12px;min-width:0}
+.force-right{justify-content:flex-end}
+.units{display:flex;align-items:center;gap:12px;min-width:0;overflow:hidden}
+.force-right .units{flex-direction:row-reverse}
+.group{display:flex;align-items:flex-end;gap:4px;min-width:0}
+.group:empty{display:none}
+.group.shields{flex-direction:column;gap:4px;align-items:flex-start}
+.force-right .group.shields{align-items:flex-end}
+.piece{display:block;flex:0 0 auto}
+.piece.turret{width:16px;height:28px;background:var(--ink);border-radius:2px 2px 1px 1px;position:relative;box-shadow:0 2px 3px -2px rgba(36,31,23,.55)}
+.piece.turret::before{content:"";position:absolute;left:6px;top:-6px;width:4px;height:8px;
+  background:var(--brass);border-radius:1px}
+.piece.shield{width:24px;height:8px;border-radius:1px;
+  background:var(--faction,var(--bulwark));border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 3px -2px rgba(36,31,23,.4)}
+.more{font:500 12px/1 var(--mono);color:var(--ink-2);font-style:normal;padding:0 2px}
+.base{position:relative;width:60px;height:84px;flex:0 0 60px;border-radius:4px;
+  background:var(--ink);border:1px solid rgba(0,0,0,.55);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  color:var(--paper);
+  box-shadow:inset 0 2px 0 var(--faction,transparent),0 8px 14px -10px rgba(36,31,23,.55)}
+.base .sig{font:600 20px/1 var(--serif)}
+.base-hp{display:flex;gap:2px}
+.base-hp i{display:block;width:8px;height:3px;background:rgba(232,220,198,.28)}
+.base-hp i.on{background:var(--brass)}
+.front{position:relative;align-self:stretch;width:1px;border-left:1px dashed rgba(36,31,23,.32)}
+.front span{position:absolute;top:0;left:50%;transform:translateX(-50%);
+  background:var(--paper);color:var(--ink-2);font-size:12px;padding:0 8px;white-space:nowrap}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 
 /* ============ 行动区 ============ */
+footer{display:flex;flex-direction:column;gap:12px;min-height:0}
 .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.act{position:relative;text-align:left;padding:13px 15px;border-radius:var(--r);
-  background:linear-gradient(180deg,#131d38,#0e1730);border:1px solid var(--line);
-  transition:transform var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
-             box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease)}
-.act:hover:not(:disabled){transform:translateY(-2px);border-color:var(--line2);
-  box-shadow:0 14px 34px -20px #000}
-.act:active:not(:disabled){transform:scale(.985)}
-.act:disabled{opacity:.42;cursor:not-allowed}
-.act .k{position:absolute;top:10px;right:12px;font-size:11px;color:var(--dim);
-  border:1px solid var(--line2);border-radius:6px;padding:1px 6px}
-.act .t{font-weight:700;font-size:15px;margin-bottom:3px}
-.act .d{font-size:12px;color:var(--muted)}
-.act.attack{border-color:#3a2a2a;background:linear-gradient(180deg,#22162a,#170f23)}
-.act.attack:hover:not(:disabled){border-color:#5b3a3a}
+.act{position:relative;text-align:left;padding:16px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--line);
+  transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
+.act:hover:not(:disabled){background:var(--raised);border-color:var(--line-2)}
+.act:active:not(:disabled){transform:scale(.99)}
+.act:disabled{opacity:.45;cursor:not-allowed}
+.act .k{position:absolute;top:8px;right:12px;width:20px;height:20px;
+  display:grid;place-items:center;font:500 12px/1 var(--mono);color:var(--dim);
+  border:1px solid var(--line);border-radius:3px;background:var(--panel-2)}
+.act .head{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.act .t{font-size:15px;font-weight:500;color:var(--text)}
+.act .d{display:block;font-size:12px;color:var(--muted);margin-top:4px;
+  font-variant-numeric:tabular-nums}
+.act.attack .head{color:var(--danger-text)}
 
-/* ============ 战报 ============ */
-.log{height:112px;overflow:auto;background:var(--panel2);border:1px solid var(--line);
-  border-radius:var(--r);padding:10px 14px;font-size:13px;scrollbar-width:thin}
-.log p{margin:3px 0;color:var(--muted);display:flex;gap:8px}
-.log p b{color:var(--text);font-weight:600}
-.log p .t{color:var(--dim);font-size:11px;min-width:44px}
-.log p.hit b{color:var(--danger)}
-.log p.good b{color:var(--ok)}
-.log p.gold b{color:var(--gold)}
+.log-wrap{display:flex;flex-direction:column;gap:8px;min-height:0}
+.log-head{font-size:12px;color:var(--dim);display:flex;justify-content:space-between}
+.log{height:104px;overflow:auto;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:10px;padding:8px 16px;font-size:12px;line-height:1.75;scrollbar-width:thin}
+.log p{margin:0;color:var(--muted);display:flex;gap:8px}
+.log p b{color:var(--text);font-weight:500}
+.log p .t{color:var(--dim);font-family:var(--mono);font-size:12px;min-width:24px}
+.log p.hit b{color:var(--danger-text)}
+.log p.good b{color:var(--ok-text)}
+.log p.gold b{color:var(--brass)}
 
 /* ============ 弹窗 ============ */
-.modal{position:fixed;inset:0;display:grid;place-items:center;z-index:40;
-  background:radial-gradient(900px 500px at 50% 40%,rgba(20,32,62,.92),rgba(6,10,22,.97));
-  backdrop-filter:blur(3px)}
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:24px;
+  background:rgba(10,8,6,.97)}
 .modal.hidden{display:none}
-.panel{width:min(760px,92vw);background:linear-gradient(180deg,#121c38,#0c1428);
-  border:1px solid var(--line2);border-radius:22px;padding:26px 28px;
-  box-shadow:0 40px 120px -40px #000;animation:rise 320ms var(--ease)}
-@keyframes rise{from{transform:translateY(14px) scale(.985);opacity:0}to{transform:none;opacity:1}}
-.panel h2{margin:0 0 4px;font-size:22px}
-.panel .lead{margin:0 0 18px;color:var(--muted);font-size:13px}
-.picks{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.pick{text-align:left;padding:16px;border-radius:16px;border:1px solid var(--line);
-  background:linear-gradient(180deg,#131d38,#0e1730);
-  transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
-.pick:hover{transform:translateY(-3px);box-shadow:0 22px 50px -28px #000}
-.pick .ph{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.pick .ph .dot{width:12px;height:12px;border-radius:50%}
-.pick .ph .nm{font-weight:800;font-size:17px}
-.pick ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
-.pick ul li{margin:3px 0}
-.result{display:grid;gap:14px}
-.result .big{font-size:26px;font-weight:800}
-.result .sub{color:var(--muted);font-size:13px}
-.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
-.kv .box{background:#0d1529;border:1px solid var(--line);border-radius:12px;padding:12px}
-.kv .box .h{font-size:12px;color:var(--muted);margin-bottom:6px}
-.kv .box .v{font-size:13px;line-height:1.8}
-.again{margin-top:6px;align-self:start;padding:11px 20px;border-radius:12px;font-weight:700;
-  background:linear-gradient(180deg,#2b6cf6,#1d4ed8);border:1px solid #3b82f6}
-.again:active{transform:scale(.98)}
+.sheet{width:min(820px,100%);max-height:calc(100vh - 48px);overflow:auto;animation:rise 240ms var(--ease)}
+.modal-head h2{font:600 28px/1.2 var(--serif);margin:0 0 8px;color:var(--text)}
+.modal-head p{margin:0 0 20px;color:var(--muted);font-size:13px;max-width:62ch}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pick{text-align:left;padding:20px;border-radius:12px;background:var(--paper);color:var(--ink);
+  border:1px solid rgba(36,31,23,.4);
+  transition:background-color var(--t) var(--ease),border-color var(--t) var(--ease),transform var(--t-fast) var(--ease)}
+.pick:hover{background:#efe4cc;border-color:var(--brass)}
+.pick:active{transform:scale(.995)}
+.pick .ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.pick .seal{background:var(--bulwark)}
+.pick .nm{font:600 20px/1 var(--serif)}
+.pick .doctrine{display:block;font-size:13px;color:var(--ink-2);margin:0 0 16px;line-height:1.6}
+.pick .stats{display:flex;flex-direction:column;gap:0}
+.pick .statline{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-top:1px solid rgba(36,31,23,.16);font-size:13px;color:var(--ink-2)}
+.pick .statline b{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink)}
+.pick .go{display:flex;justify-content:space-between;align-items:center;
+  margin-top:16px;font-size:12px;color:var(--ink-2)}
+.pick .go .arrow{color:var(--brass);font-size:14px}
+
+.result{width:min(720px,100%);background:var(--paper);color:var(--ink);
+  border:1px solid rgba(36,31,23,.4);border-radius:12px;padding:24px;
+  animation:rise 240ms var(--ease)}
+.result .kicker{font-size:12px;color:var(--ink-2)}
+.result h2{font:600 32px/1.15 var(--serif);margin:8px 0}
+.result .why{margin:0 0 16px;font-size:13px;color:var(--ink-2);line-height:1.6}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kv .box{border:1px solid rgba(36,31,23,.2);border-radius:8px;padding:12px}
+.kv .h{font-size:12px;color:var(--ink-2);margin-bottom:6px}
+.kv .v{font-size:13px;line-height:1.75;font-variant-numeric:tabular-nums}
+.again{width:100%;margin-top:16px;padding:12px 16px;border-radius:8px;
+  background:var(--ink);color:var(--paper);font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.again:hover{background:#332b20}
+.again .key{font:500 12px/1 var(--mono);border:1px solid rgba(232,220,196,.35);
+  border-radius:3px;padding:2px 5px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* ============ 动效 ============ */
-.shake{animation:shake 260ms var(--ease)}
-@keyframes shake{
-  0%,100%{transform:translateX(0)}
-  20%{transform:translateX(-5px)}40%{transform:translateX(4px)}
-  60%{transform:translateX(-3px)}80%{transform:translateX(2px)}
-}
-.flash{animation:flash 380ms var(--ease)}
-@keyframes flash{0%{box-shadow:inset 0 0 0 2px var(--danger),0 0 40px -10px var(--danger)}
-  100%{box-shadow:inset 0 0 0 0 transparent,0 0 0 0 transparent}}
-.flyer{position:fixed;width:14px;height:14px;border-radius:50%;pointer-events:none;z-index:30;
-  background:radial-gradient(circle at 35% 35%,#fff,var(--c,#7dd3fc) 55%,transparent 72%);
-  filter:drop-shadow(0 0 10px var(--c,#7dd3fc))}
-.ringfx{position:fixed;border-radius:50%;pointer-events:none;z-index:29;border:2px solid var(--c,#7dd3fc);
-  animation:ring 420ms var(--ease) forwards}
-@keyframes ring{from{transform:scale(.2);opacity:.95}to{transform:scale(2.4);opacity:0}}
-.banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;
-  padding:12px 26px;border-radius:99px;font-weight:800;font-size:20px;letter-spacing:1px;
-  background:rgba(10,16,32,.86);border:1px solid var(--line2);animation:rise 260ms var(--ease)}
+.shake{animation:shake 220ms var(--ease)}
+@keyframes shake{0%,100%{transform:translateX(0)}30%{transform:translateX(-2px)}60%{transform:translateX(2px)}}
+.flyer{position:fixed;width:6px;height:6px;border-radius:50%;
+  background:var(--brass-2);pointer-events:none;z-index:30}
+.ringfx{position:fixed;border-radius:50%;pointer-events:none;z-index:29;
+  border:1px solid var(--c,var(--brass));animation:ring 360ms var(--ease) forwards}
+@keyframes ring{from{transform:scale(.4);opacity:.9}to{transform:scale(1.6);opacity:0}}
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:1ms!important;transition-duration:1ms!important}
+}
+
+/* ============ 窄屏 ============ */
+@media (max-width:1100px){
+  .app{padding:16px 20px}
+  .board{grid-template-columns:220px minmax(0,1fr) 220px}
+  .brand{min-width:200px}
+}
+@media (max-width:900px){
+  html,body{height:auto;min-height:100%}
+  body{overflow:auto}
+  .app{height:auto;min-height:100%;grid-template-rows:auto auto auto;gap:12px;padding:16px}
+  .topbar{flex-wrap:wrap;gap:10px 12px}
+  .brand{flex:1 1 100%;min-width:0}
+  .turn{flex:1 1 100%;order:2;gap:12px}
+  .turnwho{order:3;width:100%;justify-content:flex-start;min-width:0}
+  .notches{max-width:none}
+  .board{grid-template-columns:1fr 1fr;grid-template-areas:"table table" "s1 s2";gap:12px;align-items:start}
+  .table{height:auto;min-height:320px}
+  .dossier{padding:12px;gap:8px}
+  .who{gap:8px}
+  .seal{width:36px;height:36px;flex-basis:36px;font-size:18px}
+  .who .sub{white-space:normal}
+  .row{font-size:12px;padding:5px 0}
+  .row b{font-size:13px}
+  .hp{padding-left:24px}
+  .pips-shield{padding-left:24px}
+  .field{padding:8px 12px 12px;gap:8px}
+  .field::before{height:96px}
+  .table-top{padding:10px 12px 0}
+  .table-top .hint{display:none}
+  .force{gap:8px}
+  .units{gap:8px}
+  .base{width:40px;height:56px;flex-basis:40px}
+  .piece.turret{width:8px;height:16px}
+  .piece.turret::before{left:2px;width:4px;height:5px}
+  .piece.shield{width:16px;height:4px}
+  .actions{gap:8px}
+  .act{padding:12px}
+  .act .t{font-size:14px}
+  .act .d{font-size:12px}
+  .act .k{top:8px;right:8px;width:18px;height:18px}
+  .log{height:140px}
+  .picks{grid-template-columns:1fr}
+  .modal{padding:16px}
+  .result{padding:20px}
+  .result h2{font-size:28px}
+}
+@media (max-width:360px){
+  .brand .sub{display:none}
+}
+@media (max-width:520px){
+  .active-tag{display:none}
+  .brand h1{font-size:20px}
+  .turn-label b{font-size:16px}
+  .notches{gap:2px}
+  .kv{grid-template-columns:1fr}
+  .act .head svg{display:none}
+  .act .t{font-size:13px}
 }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-base" viewBox="0 0 16 16">
+      <path d="M3 13V6l2-1.5L7 6l2-1.5L11 6l2-1.5V13"/>
+      <path d="M6 13V9h4v4"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 16 16">
+      <path d="M8 2.5l4.5 1.8v3.4c0 2.7-2 4.8-4.5 5.8-2.5-1-4.5-3.1-4.5-5.8V4.3L8 2.5z"/>
+    </symbol>
+    <symbol id="i-turret" viewBox="0 0 16 16">
+      <path d="M4 13.5h8"/>
+      <path d="M6 13.5V9.5h4v4"/>
+      <path d="M8 9.5V6.5M6.5 6.5h3M8 6.5V3.5"/>
+    </symbol>
+    <symbol id="i-flag" viewBox="0 0 16 16">
+      <path d="M4 2.5v11M4 3.5h7l-1.3 2.5L11 8.5H4"/>
+    </symbol>
+    <symbol id="i-attack" viewBox="0 0 16 16">
+      <path d="M2.5 8h8M7.5 5l3 3-3 3"/>
+      <path d="M12.5 3.5l1-1M12.5 12.5l1 1"/>
+    </symbol>
+  </defs>
+</svg>
+
 <div class="app">
-  <!-- 顶栏 -->
   <header class="topbar">
     <div class="brand">
-      <h1>TurretWar</h1><span class="ver">4.0 · 网页版</span>
+      <h1>TurretWar</h1>
+      <span class="sub">炮台战争 · 双人 24 手</span>
     </div>
-    <div class="turnbox">
-      <span class="label">回合</span>
-      <span class="num mono"><span id="ply">0</span><small>/24</small></span>
+    <div class="turn" aria-label="回合进度">
+      <span class="turn-label">第 <b id="ply" class="mono">0</b> 手 <span class="total">/ 24</span></span>
+      <div class="notches" id="notches" aria-hidden="true"></div>
     </div>
-    <div class="deadline" id="deadline"><i id="deadlineBar"></i></div>
-    <div class="turnwho" id="turnwho">准备中</div>
+    <div class="turnwho" id="turnwho">选择阵营</div>
   </header>
 
-  <!-- 战场 -->
   <main class="board">
-    <section class="side" id="side1">
-      <div class="card" id="card1">
+    <section class="side" id="side1" aria-label="玩家1">
+      <div class="dossier" id="card1">
         <div class="who">
-          <div class="badge" id="badge1" style="background:var(--bulwark)">壁</div>
-          <div>
+          <div class="seal" id="badge1">壁</div>
+          <div class="who-text">
             <div class="name" id="name1">壁垒</div>
-            <div class="sub" id="sub1">造护盾 +3 · 伤害 1</div>
+            <div class="sub" id="sub1">造护盾 +3 · 炮台伤害 1</div>
           </div>
-          <span class="active-tag" id="tag1">行动中</span>
+          <span class="active-tag" id="tag1">行动</span>
         </div>
-        <div class="hp" id="hp1"></div>
-        <div class="stat"><span><span class="ico">🏰</span>基地生命</span><b class="mono" id="hpNum1">3</b></div>
-        <div class="stat"><span><span class="ico">🛡</span>护盾</span><b class="mono" id="shNum1">0</b></div>
-        <div class="pips-shield" id="shPips1"></div>
-        <div class="stat" style="margin-top:6px"><span><span class="ico">💥</span>炮台</span><b class="mono" id="tuNum1">0</b></div>
-        <div class="stat"><span>剩余兵力</span><b class="mono" id="force1">0</b></div>
+        <div class="ledger">
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-base"/></svg></span>
+            <span>基地</span><b class="mono" id="hpNum1">3</b>
+          </div>
+          <div class="hp" id="hp1"></div>
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-shield"/></svg></span>
+            <span>护盾</span><b class="mono" id="shNum1">0</b>
+          </div>
+          <div class="pips-shield" id="shPips1"></div>
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-turret"/></svg></span>
+            <span>炮台</span><b class="mono" id="tuNum1">0</b>
+          </div>
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-flag"/></svg></span>
+            <span>兵力</span><b class="mono" id="force1">0</b>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="mid" id="mid">
+    <section class="table" id="mid" aria-label="战场">
       <canvas id="fx"></canvas>
-      <div class="lane">
-        <div class="sideStat"><span class="nm" id="laneName1">玩家1</span><b class="mono" id="laneF1">0</b></div>
-        <div class="track"><i id="bar1"></i></div>
-        <div class="emblem">VS</div>
-        <div class="track"><i id="bar2"></i></div>
-        <div class="sideStat right"><span class="nm" id="laneName2">玩家2</span><b class="mono" id="laneF2">0</b></div>
+      <div class="table-top">
+        <span id="laneName1">P1 · 壁垒</span>
+        <span class="hint" id="laneHint">超时比基地血与兵力</span>
+        <span id="laneName2">P2 · 突击</span>
       </div>
-      <div class="laneHint" id="laneHint">剩余 24 手 · 超时先比基地血，再比剩余兵力</div>
+      <div class="field">
+        <div class="force force-left">
+          <div class="base" id="base1">
+            <span class="sig">基</span>
+            <span class="base-hp" id="baseHp1"><i></i><i></i><i></i></span>
+          </div>
+          <div class="units" id="pieces1"></div>
+        </div>
+        <div class="front"><span>战线</span></div>
+        <div class="force force-right">
+          <div class="units" id="pieces2"></div>
+          <div class="base" id="base2">
+            <span class="sig">基</span>
+            <span class="base-hp" id="baseHp2"><i></i><i></i><i></i></span>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section class="side" id="side2">
-      <div class="card" id="card2">
+    <section class="side" id="side2" aria-label="玩家2">
+      <div class="dossier" id="card2">
         <div class="who">
-          <div class="badge" id="badge2" style="background:var(--striker)">突</div>
-          <div>
+          <div class="seal" id="badge2">突</div>
+          <div class="who-text">
             <div class="name" id="name2">突击</div>
-            <div class="sub" id="sub2">造护盾 +2 · 伤害 2</div>
+            <div class="sub" id="sub2">造护盾 +2 · 炮台伤害 2</div>
           </div>
-          <span class="active-tag" id="tag2">行动中</span>
+          <span class="active-tag" id="tag2">行动</span>
         </div>
-        <div class="hp" id="hp2"></div>
-        <div class="stat"><span><span class="ico">🏰</span>基地生命</span><b class="mono" id="hpNum2">3</b></div>
-        <div class="stat"><span><span class="ico">🛡</span>护盾</span><b class="mono" id="shNum2">0</b></div>
-        <div class="pips-shield" id="shPips2"></div>
-        <div class="stat" style="margin-top:6px"><span><span class="ico">💥</span>炮台</span><b class="mono" id="tuNum2">0</b></div>
-        <div class="stat"><span>剩余兵力</span><b class="mono" id="force2">0</b></div>
+        <div class="ledger">
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-base"/></svg></span>
+            <span>基地</span><b class="mono" id="hpNum2">3</b>
+          </div>
+          <div class="hp" id="hp2"></div>
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-shield"/></svg></span>
+            <span>护盾</span><b class="mono" id="shNum2">0</b>
+          </div>
+          <div class="pips-shield" id="shPips2"></div>
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-turret"/></svg></span>
+            <span>炮台</span><b class="mono" id="tuNum2">0</b>
+          </div>
+          <div class="row">
+            <span class="ico"><svg class="ico-svg" aria-hidden="true"><use href="#i-flag"/></svg></span>
+            <span>兵力</span><b class="mono" id="force2">0</b>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- 行动 + 战报 -->
   <footer>
     <div class="actions">
       <button class="act" id="a0" data-a="0">
         <span class="k">1</span>
-        <div class="t">建造炮台</div>
-        <div class="d" id="d0">+1 座炮台</div>
+        <span class="head">
+          <svg class="ico-svg" aria-hidden="true"><use href="#i-turret"/></svg>
+          <span class="t">建造炮台</span>
+        </span>
+        <span class="d" id="d0">+1 座 · 现有 0</span>
       </button>
       <button class="act" id="a1" data-a="1">
         <span class="k">2</span>
-        <div class="t">建造护盾</div>
-        <div class="d" id="d1">+3 护盾</div>
+        <span class="head">
+          <svg class="ico-svg" aria-hidden="true"><use href="#i-shield"/></svg>
+          <span class="t">建造护盾</span>
+        </span>
+        <span class="d" id="d1">+3 · 现有 0</span>
       </button>
       <button class="act attack" id="a2" data-a="2">
         <span class="k">3</span>
-        <div class="t">发起进攻</div>
-        <div class="d" id="d2">炮台 ×1 伤害</div>
+        <span class="head">
+          <svg class="ico-svg" aria-hidden="true"><use href="#i-attack"/></svg>
+          <span class="t">发起进攻</span>
+        </span>
+        <span class="d" id="d2">炮台 0 × 1 = 0</span>
       </button>
     </div>
-    <div class="log" id="log"></div>
+    <div class="log-wrap">
+      <div class="log-head"><span>战报</span><span>24 手</span></div>
+      <div class="log" id="log"></div>
+    </div>
   </footer>
 </div>
 
-<!-- 开局选阵营 -->
 <div class="modal" id="pickModal">
-  <div class="panel">
-    <h2>选择你的阵营</h2>
-    <p class="lead">玩家1 先选，玩家2 自动使用另一个。规则与 TurretWar 3.0 完全一致（24 手预算 · 护盾反击）。</p>
+  <div class="sheet">
+    <div class="modal-head">
+      <h2>选择阵营</h2>
+      <p>玩家1 先选，玩家2 使用另一阵营。24 手内击毁对方基地；超时则先比基地血，再比剩余兵力。</p>
+    </div>
     <div class="picks">
       <button class="pick" data-f="bulwark">
-        <div class="ph"><span class="dot" style="background:var(--bulwark)"></span><span class="nm">壁垒</span></div>
-        <ul><li>造护盾 <b>+3</b></li><li>每座炮台伤害 <b>1</b></li><li>开局护盾 0</li></ul>
-        <p class="lead" style="margin:10px 0 0">用护盾墙拖住对手，靠反伤与节奏反打。</p>
+        <span class="ph">
+          <span class="seal" style="background:var(--bulwark)">壁</span>
+          <span class="nm">壁垒</span>
+        </span>
+        <span class="doctrine">用护盾墙拖住对手，靠反伤与节奏反打。</span>
+        <span class="stats">
+          <span class="statline"><span>造护盾</span><b>+3</b></span>
+          <span class="statline"><span>每座炮台伤害</span><b>1</b></span>
+          <span class="statline"><span>开局护盾</span><b>0</b></span>
+        </span>
+        <span class="go"><span>选择壁垒</span><span class="arrow">→</span></span>
       </button>
       <button class="pick" data-f="striker">
-        <div class="ph"><span class="dot" style="background:var(--striker)"></span><span class="nm">突击</span></div>
-        <ul><li>造护盾 <b>+2</b></li><li>每座炮台伤害 <b>2</b></li><li>开局护盾 <b>+1</b>（平衡补偿）</li></ul>
-        <p class="lead" style="margin:10px 0 0">少量炮台即可破防，追求早期压制。</p>
+        <span class="ph">
+          <span class="seal" style="background:var(--striker)">突</span>
+          <span class="nm">突击</span>
+        </span>
+        <span class="doctrine">少量炮台即可破防，追求早期压制。</span>
+        <span class="stats">
+          <span class="statline"><span>造护盾</span><b>+2</b></span>
+          <span class="statline"><span>每座炮台伤害</span><b>2</b></span>
+          <span class="statline"><span>开局护盾</span><b>1</b></span>
+        </span>
+        <span class="go"><span>选择突击</span><span class="arrow">→</span></span>
       </button>
     </div>
   </div>
 </div>
 
-<!-- 结算 -->
 <div class="modal hidden" id="endModal">
-  <div class="panel">
-    <div class="result">
-      <div class="big" id="endTitle">—</div>
-      <div class="sub" id="endWhy">—</div>
-      <div class="kv">
-        <div class="box"><div class="h" id="endH1">玩家1</div><div class="v" id="endV1"></div></div>
-        <div class="box"><div class="h" id="endH2">玩家2</div><div class="v" id="endV2"></div></div>
-      </div>
-      <button class="again" id="againBtn">再来一局</button>
+  <div class="result" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+    <div class="kicker">战报 · 第 <span id="endPly">0</span> 手</div>
+    <h2 id="endTitle">—</h2>
+    <p class="why" id="endWhy">—</p>
+    <div class="kv">
+      <div class="box"><div class="h" id="endH1">玩家1</div><div class="v" id="endV1"></div></div>
+      <div class="box"><div class="h" id="endH2">玩家2</div><div class="v" id="endV2"></div></div>
     </div>
+    <button class="again" id="againBtn">再来一局 <span class="key">R</span></button>
   </div>
 </div>
 
 <script>
 window.addEventListener('error', e => { document.title = 'ERR ' + (e.message || 'unknown'); });
 </script>
+
 <script id="rules-core">
 /* ============================================================
  * TurretWar 3.0 规则核心 —— 纯函数，不碰 DOM。
@@ -452,53 +653,64 @@ if (typeof module !== 'undefined') module.exports = TW;
   let S = null;
   let busy = false;
 
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const log = (txt, cls='') => {
     const p = document.createElement('p');
     if (cls) p.className = cls;
-    const t = document.createElement('span'); t.className='t';
-    t.textContent = S ? `#${String(S.ply).padStart(2,'0')}` : '';
+    const t = document.createElement('span'); t.className = 't';
+    t.textContent = S ? String(S.ply).padStart(2,'0') : '';
     const b = document.createElement('span'); b.innerHTML = txt;
     p.appendChild(t); p.appendChild(b);
     el.log.appendChild(p);
     el.log.scrollTop = el.log.scrollHeight;
   };
 
-  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   /* ---------- 渲染 ---------- */
+  function paintNotches(ply, over){
+    const ns = el.notches.children;
+    for (let i = 0; i < ns.length; i++){
+      ns[i].className = 'notch'
+        + (i < ply ? ' done' : '')
+        + (i === ply && !over ? ' now' : '')
+        + (i >= 20 ? ' late' : '');
+    }
+  }
+
   function render(){
-    if (!S) return;                      /* 开局前不渲染，避免 S 为 null */
-    const p1 = S.p1, p2 = S.p2, f1 = TW.FACTIONS[p1.faction], f2 = TW.FACTIONS[p2.faction];
+    if (!S) return;
+    const p1 = S.p1, p2 = S.p2;
+    const f1 = TW.FACTIONS[p1.faction], f2 = TW.FACTIONS[p2.faction];
     el.ply.textContent = S.ply;
+    paintNotches(S.ply, S.over);
+
     const left = Math.max(0, TW.BUDGET - S.ply);
-    el.deadlineBar.style.width = (left / TW.BUDGET * 100) + '%';
-    el.deadline.classList.toggle('warn', left <= 4);
-
     const turn = S.over ? 0 : TW.turnOf(S);
-    el.turnwho.innerHTML = S.over ? '对局结束' : `轮到 <b>玩家${turn}</b>`;
+    if (S.over){
+      el.turnwho.innerHTML = '<span class="dot" style="background:var(--dim)"></span>对局结束';
+    } else {
+      const fac = TW.faction(S, turn);
+      el.turnwho.innerHTML = `<span class="dot" style="background:${fac.color}"></span>轮到 <b>玩家${turn} · ${fac.name}</b>`;
+    }
 
-    fillSide(1, p1, f1); fillSide(2, p2, f2);
+    fillSide(1, p1, f1);
+    fillSide(2, p2, f2);
 
     el.side1.classList.toggle('active', turn === 1);
     el.side2.classList.toggle('active', turn === 2);
 
-    /* 战线条：按双方兵力归一化 */
-    const fA = TW.forces(p1), fB = TW.forces(p2), scale = Math.max(fA, fB, 8);
-    $('bar1').style.width = (fA/scale*100).toFixed(1) + '%';
-    $('bar2').style.width = (fB/scale*100).toFixed(1) + '%';
-    $('laneF1').textContent = fA; $('laneF2').textContent = fB;
-    $('laneName1').textContent = `玩家1 · ${f1.name}`;
-    $('laneName2').textContent = `玩家2 · ${f2.name}`;
-    $('laneHint').textContent = S.over
-      ? '对局结束'
-      : `剩余 ${left} 手 · 超时先比基地血，再比剩余兵力`;
+    $('laneName1').textContent = `P1 · ${f1.name}`;
+    $('laneName2').textContent = `P2 · ${f2.name}`;
+    $('laneHint').textContent = S.over ? '对局结束' : '超时比基地血与兵力';
+
+    renderPieces(1, p1, f1);
+    renderPieces(2, p2, f2);
 
     const cur = turn ? TW.sideOf(S, turn) : null;
     const fac = turn ? TW.faction(S, turn) : null;
-
-    el.d0.textContent = cur ? `+1 座（现有 ${cur.turrets}）` : '—';
-    el.d1.textContent = cur ? `+${fac.shieldGain} 护盾（现有 ${cur.shields}）` : '—';
-    el.d2.textContent = cur ? `炮台 ${cur.turrets} × ${fac.dmg} = ${cur.turrets*fac.dmg} 伤害` : '—';
+    el.d0.textContent = cur ? `+1 座 · 现有 ${cur.turrets}` : '—';
+    el.d1.textContent = cur ? `+${fac.shieldGain} · 现有 ${cur.shields}` : '—';
+    el.d2.textContent = cur ? `炮台 ${cur.turrets} × ${fac.dmg} = ${cur.turrets*fac.dmg}` : '—';
 
     const dis = S.over || busy;
     [el.a0, el.a1, el.a2].forEach(b => b.disabled = dis);
@@ -507,37 +719,83 @@ if (typeof module !== 'undefined') module.exports = TW;
   function fillSide(n, p, f){
     const badge = $('badge'+n), name = $('name'+n), sub = $('sub'+n);
     badge.textContent = f.sigil; badge.style.background = f.color;
+    const base = $('base'+n); if (base) base.style.setProperty('--faction', f.color);
     name.textContent = f.name;
-    sub.textContent = `造护盾 +${f.shieldGain} · 伤害 ${f.dmg}`;
+    sub.textContent = `造盾 +${f.shieldGain} · 伤害 ${f.dmg}`;
 
-    /* HP 条 */
+    /* HP 段 */
     const hpBox = $('hp'+n);
     if (hpBox.childElementCount !== TW.BASE_HP){
       hpBox.innerHTML = '';
-      for (let i=0;i<TW.BASE_HP;i++){ const d=document.createElement('div'); d.className='pip'; hpBox.appendChild(d); }
+      for (let i = 0; i < TW.BASE_HP; i++){
+        const d = document.createElement('div'); d.className = 'pip'; hpBox.appendChild(d);
+      }
     }
-    [...hpBox.children].forEach((d,i)=>{
-      const on = i < p.hp;
-      const was = d.classList.contains('on');
+    [...hpBox.children].forEach((d, i) => {
+      const on = i < p.hp, was = d.classList.contains('on');
       d.classList.toggle('on', on);
-      if (was && !on) { d.classList.remove('hurt'); void d.offsetWidth; d.classList.add('hurt'); }
+      if (was && !on){ d.classList.remove('hurt'); void d.offsetWidth; d.classList.add('hurt'); }
     });
+
     $('hpNum'+n).textContent = p.hp;
     $('shNum'+n).textContent = p.shields;
     $('tuNum'+n).textContent = p.turrets;
     $('force'+n).textContent = TW.forces(p);
 
-    /* 护盾点 */
+    /* 基地血量刻度 */
+    const bh = $('baseHp'+n);
+    [...bh.children].forEach((d, i) => d.classList.toggle('on', i < p.hp));
+
+    /* 护盾计数：最多 8 个点，超出用 +N */
     const sp = $('shPips'+n);
-    const cap = Math.max(8, p.shields);
-    while (sp.childElementCount < cap){ sp.appendChild(document.createElement('span')); }
-    while (sp.childElementCount > cap){ sp.removeChild(sp.lastChild); }
-    [...sp.children].forEach((d,i)=>{
-      const on = i < p.shields;
-      const was = d.classList.contains('on');
+    const shown = Math.min(8, p.shields);
+    let more = sp.querySelector('.more');
+    if (more) more.remove();
+    let pips = [...sp.querySelectorAll('span')];
+    while (pips.length < shown){
+      const d = document.createElement('span');
+      sp.appendChild(d); pips.push(d);
+    }
+    while (pips.length > shown){ pips.pop().remove(); }
+    pips.forEach((d, i) => {
+      const on = i < p.shields, was = d.classList.contains('on');
       d.classList.toggle('on', on);
       if (on && !was){ d.classList.remove('new'); void d.offsetWidth; d.classList.add('new'); }
     });
+    if (p.shields > 8){
+      more = document.createElement('em');
+      more.className = 'more';
+      more.textContent = '+' + (p.shields - 8);
+      sp.appendChild(more);
+    }
+  }
+
+  function renderPieces(n, p, f){
+    const box = $('pieces'+n);
+    box.style.setProperty('--faction', f.color);
+    box.innerHTML = '';
+    const tw = $('mid').clientWidth;
+    const max = tw < 460 ? 3 : tw < 620 ? 4 : 6;
+
+    const tg = document.createElement('div'); tg.className = 'group turrets';
+    for (let i = 0; i < Math.min(p.turrets, max); i++){
+      const d = document.createElement('i'); d.className = 'piece turret'; tg.appendChild(d);
+    }
+    if (p.turrets > max){
+      const m = document.createElement('em'); m.className = 'more';
+      m.textContent = '+' + (p.turrets - max); tg.appendChild(m);
+    }
+
+    const sg = document.createElement('div'); sg.className = 'group shields';
+    for (let i = 0; i < Math.min(p.shields, max); i++){
+      const d = document.createElement('i'); d.className = 'piece shield'; sg.appendChild(d);
+    }
+    if (p.shields > max){
+      const m = document.createElement('em'); m.className = 'more';
+      m.textContent = '+' + (p.shields - max); sg.appendChild(m);
+    }
+
+    box.appendChild(tg); box.appendChild(sg);
   }
 
   /* ---------- 动画 ---------- */
@@ -546,25 +804,23 @@ if (typeof module !== 'undefined') module.exports = TW;
     return { x: r.left + r.width/2, y: r.top + r.height/2 };
   }
 
-  function flyer(from, to, color, arc=90, dur=380){
+  function flyer(from, to, color, arc = 70, dur = 360){
     if (reduced()) return Promise.resolve();
     return new Promise(res => {
       const a = centerOf(from), b = centerOf(to);
       const d = document.createElement('div');
-      d.className='flyer'; d.style.setProperty('--c', color);
-      d.style.left = (a.x-7)+'px'; d.style.top = (a.y-7)+'px';
+      d.className = 'flyer'; d.style.background = color;
+      d.style.left = (a.x - 3) + 'px'; d.style.top = (a.y - 3) + 'px';
       document.body.appendChild(d);
       let done = false, timer = null;
-      /* 兜底：某些环境（如后台标签页、无头渲染未启用）不会触发 rAF，
-         这里用定时器保证 promise 一定会 resolve，避免整局卡死 */
       const finish = () => { if (done) return; done = true; if (timer) clearTimeout(timer); d.remove(); res(); };
       timer = setTimeout(finish, dur + 220);
       const t0 = performance.now();
       const tick = (t) => {
-        const k = Math.min(1,(t-t0)/dur);
-        const x = a.x + (b.x-a.x)*k;
-        const y = a.y + (b.y-a.y)*k - Math.sin(k*Math.PI)*arc;
-        d.style.transform = `translate(${x-a.x}px,${y-a.y}px)`;
+        const k = Math.min(1, (t - t0) / dur);
+        const x = a.x + (b.x - a.x) * k;
+        const y = a.y + (b.y - a.y) * k - Math.sin(k * Math.PI) * arc;
+        d.style.transform = `translate(${x - a.x}px,${y - a.y}px)`;
         if (k < 1) requestAnimationFrame(tick); else finish();
       };
       requestAnimationFrame(tick);
@@ -575,18 +831,18 @@ if (typeof module !== 'undefined') module.exports = TW;
     if (reduced()) return;
     const c = centerOf(node);
     const d = document.createElement('div');
-    d.className='ringfx';
+    d.className = 'ringfx';
     d.style.setProperty('--c', color);
-    d.style.width = d.style.height = '56px';
-    d.style.left = (c.x-28)+'px'; d.style.top = (c.y-28)+'px';
+    d.style.width = d.style.height = '40px';
+    d.style.left = (c.x - 20) + 'px'; d.style.top = (c.y - 20) + 'px';
     document.body.appendChild(d);
-    setTimeout(()=>d.remove(), 460);
+    setTimeout(() => d.remove(), 400);
   }
 
-  function shake(node, cls='shake'){
+  function shake(node){
     if (reduced()) return;
-    node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls);
-    setTimeout(()=>node.classList.remove(cls), 300);
+    node.classList.remove('shake'); void node.offsetWidth; node.classList.add('shake');
+    setTimeout(() => node.classList.remove('shake'), 260);
   }
 
   /* 画布粒子 */
@@ -594,76 +850,83 @@ if (typeof module !== 'undefined') module.exports = TW;
   let parts = [], raf = null;
   function resize(){
     const r = cvs.getBoundingClientRect();
-    cvs.width = r.width * devicePixelRatio; cvs.height = r.height * devicePixelRatio;
-    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    cvs.width = Math.max(1, r.width * devicePixelRatio);
+    cvs.height = Math.max(1, r.height * devicePixelRatio);
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   }
-  addEventListener('resize', resize);
 
-  function burst(node, color, n=14){
+  function burst(node, color, n = 10){
     if (reduced()) return;
     const c = centerOf(node), r = cvs.getBoundingClientRect();
-    for (let i=0;i<n;i++){
-      const ang = Math.random()*Math.PI*2, sp = 1.4 + Math.random()*3.4;
-      parts.push({ x:c.x-r.left, y:c.y-r.top, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp-1,
-                   life:1, color, size:1.6+Math.random()*2.2 });
+    for (let i = 0; i < n; i++){
+      const ang = Math.random() * Math.PI * 2, sp = 1.2 + Math.random() * 2.6;
+      parts.push({ x: c.x - r.left, y: c.y - r.top, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 1,
+                   life: 1, color, size: 1.2 + Math.random() * 1.6 });
     }
     if (!raf) raf = requestAnimationFrame(loop);
   }
 
   function loop(){
-    ctx.clearRect(0,0,cvs.width,cvs.height);
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
     parts = parts.filter(p => p.life > 0);
     for (const p of parts){
-      p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= 0.022;
+      p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= 0.024;
       ctx.globalAlpha = Math.max(0, p.life);
       ctx.fillStyle = p.color;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
     if (parts.length) raf = requestAnimationFrame(loop);
-    else { raf = null; ctx.clearRect(0,0,cvs.width,cvs.height); }
+    else { raf = null; ctx.clearRect(0, 0, cvs.width, cvs.height); }
   }
 
   /* ---------- 行动流程 ---------- */
-  const sleep = (ms) => new Promise(r => setTimeout(r, reduced()?0:ms));
-  const cardOf = (n) => (n===1 ? el.card1 : el.card2);
+  const sleep = (ms) => new Promise(r => setTimeout(r, reduced() ? 0 : ms));
 
   async function play(actionName){
     if (!S || S.over || busy) return;
     busy = true; render();
     const who = TW.turnOf(S);
     const ev = TW.step(S, who, actionName);
-    const myCard = cardOf(who), foeCard = cardOf(who===1?2:1);
-    const myFac = TW.faction(S, who), foeFac = TW.faction(S, who===1?2:1);
+    const myBase = who === 1 ? $('base1') : $('base2');
+    const foeBase = who === 1 ? $('base2') : $('base1');
+    const myUnits = who === 1 ? $('pieces1') : $('pieces2');
+    const myFac = TW.faction(S, who);
 
     for (const e of ev){
       switch(e.type){
         case 'turret':
-          log(`<b>玩家${e.who}</b> 建造炮台 +1`); ringAt(cardOf(e.who), myFac.color); await sleep(140); break;
+          log(`<b>玩家${e.who}</b> 建造炮台 +1`);
+          ringAt(myBase, myFac.color);
+          await sleep(140); break;
         case 'shield':
-          log(`<b>玩家${e.who}</b> 建造护盾 +${e.amount}`, 'gold'); ringAt(cardOf(e.who), '#ffd166'); await sleep(140); break;
+          log(`<b>玩家${e.who}</b> 建造护盾 +${e.amount}`, 'gold');
+          ringAt(myBase, '#c99a4b');
+          await sleep(140); break;
         case 'attack': {
           if (e.dmg === 0){ log(`<b>玩家${e.who}</b> 没有炮台，这次进攻空放`); break; }
           log(`<b>玩家${e.who}</b> 发起进攻：${e.dmg} 点伤害`);
-          await flyer(myCard, foeCard, myFac.color);
-          burst(foeCard, myFac.color, 16);
-          if (e.hitBase > 0 || e.loss > 0){
-            shake(foeCard); foeCard.classList.add('flash');
-            setTimeout(()=>foeCard.classList.remove('flash'), 400);
-          }
+          await flyer(myUnits, foeBase, myFac.color);
+          burst(foeBase, myFac.color, 12);
+          if (e.loss > 0) shake(foeBase);
           if (e.absorbed > 0) log(`护盾吸收 ${e.absorbed} 点`, 'gold');
-          if (e.hitBase > 0) log(`<b>基地受到 ${e.hitBase} 点伤害</b>`, 'hit');
+          const turretLoss = e.loss - e.absorbed - e.hitBase;
+          if (turretLoss > 0) log(`击毁炮台 ${turretLoss} 座`, 'hit');
+          if (e.hitBase > 0) log(`<b>基地 -${e.hitBase}</b>`, 'hit');
+          if (e.loss === 0) log('未造成伤害');
           render(); await sleep(220); break;
         }
         case 'reflect':
           log(`护盾反击：<b>玩家${e.who}</b> 受到 ${e.amount} 点反伤`, 'hit');
-          await flyer(foeCard, myCard, '#ff4d6d', 60, 300);
-          burst(myCard, '#ff4d6d', 10); shake(myCard);
+          await flyer(foeBase, myUnits, '#a33a2a', 50, 300);
+          burst(myBase, '#a33a2a', 8); shake(myBase);
           render(); await sleep(160); break;
         case 'kill':
-          log(`<b>玩家${e.who} 击毁对方基地</b>`, 'good'); render(); await sleep(240); break;
+          log(`<b>玩家${e.who} 击毁对方基地</b>`, 'good');
+          render(); await sleep(240); break;
         case 'deadline':
-          log(e.winner ? `24 手用完，超时判分：<b>玩家${e.winner} 胜</b>` : '24 手用完，判和棋'); break;
+          log(e.winner ? `手数用尽，超时判分：<b>玩家${e.winner} 胜</b>` : '手数用尽，判和棋');
+          break;
       }
     }
     busy = false;
@@ -675,12 +938,13 @@ if (typeof module !== 'undefined') module.exports = TW;
   function showEnd(){
     const f1 = TW.FACTIONS[S.p1.faction], f2 = TW.FACTIONS[S.p2.faction];
     let title, why;
-    if (S.why === 'kill') { title = `玩家${S.winner} 击杀获胜`; why = '在 24 手预算内击毁对方基地。'; }
-    else if (S.why === 'reflect') { title = `玩家${S.winner} 反伤获胜`; why = '对方的进攻被护盾反弹致死。'; }
-    else if (S.why === 'deadline') { title = `玩家${S.winner} 超时判分获胜`; why = '双方基地血相同，比较剩余兵力。'; }
-    else { title = '和棋'; why = '基地血与剩余兵力完全相同。'; }
+    if (S.why === 'kill'){ title = `玩家${S.winner} 击毁基地`; why = '在 24 手内击毁对方基地。'; }
+    else if (S.why === 'reflect'){ title = `玩家${S.winner} 反伤获胜`; why = '进攻被护盾反弹，基地被击毁。'; }
+    else if (S.why === 'deadline'){ title = `玩家${S.winner} 超时判分获胜`; why = '24 手用尽：先比基地血，再比剩余兵力。'; }
+    else { title = '和棋'; why = '24 手用尽，基地血与剩余兵力相同。'; }
     $('endTitle').textContent = title;
-    $('endWhy').textContent = why + `（${S.ply} 手 / 24）`;
+    $('endWhy').textContent = why;
+    $('endPly').textContent = S.ply;
     $('endH1').textContent = `玩家1 · ${f1.name}`;
     $('endH2').textContent = `玩家2 · ${f2.name}`;
     const line = (p) => `基地 ${p.hp} · 炮台 ${p.turrets} · 护盾 ${p.shields}<br>
@@ -693,28 +957,36 @@ if (typeof module !== 'undefined') module.exports = TW;
   /* ---------- 开局 ---------- */
   function start(factionId){
     S = TW.newState(factionId);
+    busy = false;
     el.log.innerHTML = '';
     $('pickModal').classList.add('hidden');
     $('endModal').classList.add('hidden');
     resize();
     const f1 = TW.FACTIONS[S.p1.faction], f2 = TW.FACTIONS[S.p2.faction];
     log(`玩家1 选择 <b>${f1.name}</b>，玩家2 使用 <b>${f2.name}</b>`);
-    log('规则：24 手预算 · 护盾反击 · 超时比基地血再比兵力');
+    log('24 手内击毁基地；超时比基地血与兵力');
     render();
   }
 
   /* ---------- 事件绑定 ---------- */
   document.addEventListener('DOMContentLoaded', () => {
     Object.assign(el, {
-      ply:$('ply'), deadline:$('deadline'), deadlineBar:$('deadlineBar'), turnwho:$('turnwho'),
-      side1:$('side1'), side2:$('side2'), card1:$('card1'), card2:$('card2'),
-      a0:$('a0'), a1:$('a1'), a2:$('a2'), d0:$('d0'), d1:$('d1'), d2:$('d2'),
-      log:$('log')
+      ply: $('ply'), notches: $('notches'), turnwho: $('turnwho'),
+      side1: $('side1'), side2: $('side2'), card1: $('card1'), card2: $('card2'),
+      a0: $('a0'), a1: $('a1'), a2: $('a2'), d0: $('d0'), d1: $('d1'), d2: $('d2'),
+      log: $('log'), base1: $('base1'), base2: $('base2'), pieces1: $('pieces1'), pieces2: $('pieces2')
     });
+
+    for (let i = 0; i < TW.BUDGET; i++){
+      const n = document.createElement('span');
+      n.className = 'notch';
+      el.notches.appendChild(n);
+    }
+
     resize();
     [el.a0, el.a1, el.a2].forEach(b => b.addEventListener('click', () => play(TW.ACTIONS[+b.dataset.a])));
     addEventListener('keydown', (e) => {
-      if ($('endModal').classList.contains('hidden') === false) { if (e.key === 'r' || e.key === 'R') location.reload(); return; }
+      if (!$('endModal').classList.contains('hidden')){ if (e.key === 'r' || e.key === 'R') location.reload(); return; }
       if (!S || S.over) return;
       if (e.key === '1') play('buildTurret');
       if (e.key === '2') play('buildShield');
@@ -723,6 +995,12 @@ if (typeof module !== 'undefined') module.exports = TW;
     document.querySelectorAll('.pick').forEach(p => p.addEventListener('click', () => start(p.dataset.f)));
     $('againBtn').addEventListener('click', () => location.reload());
     render();
+
+    let rt;
+    addEventListener('resize', () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => { resize(); if (S) render(); }, 80);
+    });
 
     /* 交互自测：#autoplay 走真实 play() 路径（含动画），用于无头验证 */
     if (location.hash.indexOf('autoplay') >= 0) {
@@ -746,12 +1024,15 @@ if (typeof module !== 'undefined') module.exports = TW;
           const who = TW.turnOf(S);
           const ev = TW.step(S, who, a);
           const hit = ev.find(e => e.type === 'attack');
-          if (a === 'attack') log(`<b>玩家${who}</b> 进攻 ${hit.dmg} 点 · 护盾吸收 ${hit.absorbed} · 基地 -${hit.hitBase}`);
+          if (a === 'attack') {
+            const base = hit.hitBase > 0 ? ` · 基地 -${hit.hitBase}` : ' · 基地未受损';
+            log(`<b>玩家${who}</b> 进攻 ${hit.dmg} 点 · 护盾吸收 ${hit.absorbed}${base}`);
+          }
           else if (a === 'buildShield') log(`<b>玩家${who}</b> 建造护盾`, 'gold');
           else log(`<b>玩家${who}</b> 建造炮台`);
         }
         render();
-        log('（演示模式：已自动走 10 手）');
+        log('演示中局 · 已走 10 手');
       }, 40);
     }
   });
